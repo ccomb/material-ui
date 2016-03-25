@@ -27,7 +27,7 @@ Material-UI is available as an [npm package](https://www.npmjs.org/package/mater
 ```sh
 npm install material-ui
 ```
-After npm install, you'll find all the .jsx files in the /src folder and their compiled versions in the /lib folder.
+After npm install, you'll find all the .js files in the /src folder and their compiled versions in the /lib folder.
 
 ### React-Tap-Event-Plugin
 Some components use [react-tap-event-plugin](https://github.com/zilverline/react-tap-event-plugin) to
@@ -80,7 +80,7 @@ The future plans and high priority features and enhancements can be found in the
 
 ## Contribute
 
-[Material-UI](http://www.material-ui.com/) came about from our love of [React](http://facebook.github.io/react/) and [Google's Material Design](https://www.google.com/design/spec/material-design/introduction.html). We're currently using it on a project at [Call-Em-All](https://www.call-em-all.com/) and plan on adding to it and making it better. If you'd like to help, check out the [docs folder](https://github.com/callemall/material-ui/tree/master/docs). We'd greatly appreciate any [contribution](https://github.com/callemall/material-ui/blob/master/CONTRIBUTING.md) you make. :)
+[Material-UI](http://www.material-ui.com/) came about from our love of [React](http://facebook.github.io/react/) and [Google's Material Design](https://www.google.com/design/spec/material-design/introduction.html). We're currently using it on a project at [Call-Em-All](https://www.call-em-all.com/Careers) and plan on adding to it and making it better. If you'd like to help, check out the [docs folder](https://github.com/callemall/material-ui/tree/master/docs). We'd greatly appreciate any [contribution](https://github.com/callemall/material-ui/blob/master/CONTRIBUTING.md) you make. :)
 
 ## License
 This project is licensed under the terms of the [MIT license](https://github.com/callemall/material-ui/blob/master/LICENSE)
