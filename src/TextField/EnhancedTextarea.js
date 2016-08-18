@@ -1,13 +1,12 @@
-import React from 'react';
-import getMuiTheme from '../styles/getMuiTheme';
+import React, {Component, PropTypes} from 'react';
 import EventListener from 'react-event-listener';
 
 const rowsHeight = 24;
 
-function getStyles(props, state) {
+function getStyles(props, context, state) {
   return {
     root: {
-      position: 'relative', //because the shadow has position: 'absolute'
+      position: 'relative', // because the shadow has position: 'absolute'
     },
     textarea: {
       height: state.height,
@@ -15,7 +14,7 @@ function getStyles(props, state) {
       resize: 'none',
       font: 'inherit',
       padding: 0,
-      cursor: props.disabled ? 'default' : 'initial',
+      cursor: props.disabled ? 'not-allowed' : 'initial',
     },
     shadow: {
       resize: 'none',
@@ -30,80 +29,66 @@ function getStyles(props, state) {
   };
 }
 
-const EnhancedTextarea = React.createClass({
-
-  propTypes: {
-    defaultValue: React.PropTypes.any,
-    disabled: React.PropTypes.bool,
-    onChange: React.PropTypes.func,
-    onHeightChange: React.PropTypes.func,
-    rows: React.PropTypes.number,
-    rowsMax: React.PropTypes.number,
-    shadowStyle: React.PropTypes.object,
+class EnhancedTextarea extends Component {
+  static propTypes = {
+    defaultValue: PropTypes.any,
+    disabled: PropTypes.bool,
+    onChange: PropTypes.func,
+    onHeightChange: PropTypes.func,
+    rows: PropTypes.number,
+    rowsMax: PropTypes.number,
+    shadowStyle: PropTypes.object,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-    textareaStyle: React.PropTypes.object,
-    value: React.PropTypes.string,
-    valueLink: React.PropTypes.object,
-  },
+    style: PropTypes.object,
+    textareaStyle: PropTypes.object,
+    value: PropTypes.string,
+    valueLink: PropTypes.object,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    rows: 1,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      rows: 1,
-    };
-  },
+  state = {
+    height: null,
+  };
 
-  getInitialState() {
-    return {
+  componentWillMount() {
+    this.setState({
       height: this.props.rows * rowsHeight,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+    });
+  }
 
   componentDidMount() {
-    this._syncHeightWithShadow();
-  },
+    this.syncHeightWithShadow();
+  }
 
-  componentWillReceiveProps(nextProps, nextContext) {
+  componentWillReceiveProps(nextProps) {
     if (nextProps.value !== this.props.value) {
-      this._syncHeightWithShadow(nextProps.value);
+      this.syncHeightWithShadow(nextProps.value);
     }
+  }
 
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
-
-  handleResize(event) {
-    this._syncHeightWithShadow(undefined, event);
-  },
+  handleResize = (event) => {
+    this.syncHeightWithShadow(undefined, event);
+  };
 
   getInputNode() {
     return this.refs.input;
-  },
+  }
 
   setValue(value) {
     this.getInputNode().value = value;
-    this._syncHeightWithShadow(value);
-  },
+    this.syncHeightWithShadow(value);
+  }
 
-  _syncHeightWithShadow(newValue, event) {
+  syncHeightWithShadow(newValue, event) {
     const shadow = this.refs.shadow;
 
     if (newValue !== undefined) {
@@ -111,6 +96,10 @@ const EnhancedTextarea = React.createClass({
     }
 
     let newHeight = shadow.scrollHeight;
+
+    // Guarding for jsdom, where scrollHeight isn't present.
+    // See https://github.com/tmpvar/jsdom/issues/1013
+    if (newHeight === undefined) return;
 
     if (this.props.rowsMax >= this.props.rows) {
       newHeight = Math.min(this.props.rowsMax * rowsHeight, newHeight);
@@ -127,10 +116,10 @@ const EnhancedTextarea = React.createClass({
         this.props.onHeightChange(event, newHeight);
       }
     }
-  },
+  }
 
-  handleChange(event) {
-    this._syncHeightWithShadow(event.target.value);
+  handleChange = (event) => {
+    this.syncHeightWithShadow(event.target.value);
 
     if (this.props.hasOwnProperty('valueLink')) {
       this.props.valueLink.requestChange(event.target.value);
@@ -139,27 +128,25 @@ const EnhancedTextarea = React.createClass({
     if (this.props.onChange) {
       this.props.onChange(event);
     }
-  },
+  };
 
   render() {
     const {
-      onChange,
-      onHeightChange,
-      rows,
+      onChange, // eslint-disable-line no-unused-vars
+      onHeightChange, // eslint-disable-line no-unused-vars
+      rows, // eslint-disable-line no-unused-vars
+      rowsMax, // eslint-disable-line no-unused-vars
       shadowStyle,
       style,
       textareaStyle,
-      valueLink,
+      valueLink, // eslint-disable-line no-unused-vars
       ...other,
     } = this.props;
 
-    const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
-    const styles = getStyles(this.props, this.state);
-    const rootStyles = Object.assign({}, styles.root, style);
-    const textareaStyles = Object.assign({}, styles.textarea, textareaStyle);
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context, this.state);
+    const rootStyles = Object.assign(styles.root, style);
+    const textareaStyles = Object.assign(styles.textarea, textareaStyle);
     const shadowStyles = Object.assign({}, textareaStyles, styles.shadow, shadowStyle);
 
     if (this.props.hasOwnProperty('valueLink')) {
@@ -168,7 +155,7 @@ const EnhancedTextarea = React.createClass({
 
     return (
       <div style={prepareStyles(rootStyles)}>
-        <EventListener elementName="window" onResize={this.handleResize} />
+        <EventListener target="window" onResize={this.handleResize} />
         <textarea
           ref="shadow"
           style={prepareStyles(shadowStyles)}
@@ -188,8 +175,7 @@ const EnhancedTextarea = React.createClass({
         />
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default EnhancedTextarea;

@@ -8,17 +8,17 @@ import MarkdownElement from '../../../MarkdownElement';
 import cardReadmeText from './README';
 import cardExampleWithAvatarCode from '!raw!./ExampleWithAvatar';
 import CardExampleWithAvatar from './ExampleWithAvatar';
-import cardExampleWithoutAvatarCode from '!raw!./ExampleWithoutAvatar';
-import CardExampleWithoutAvatar from './ExampleWithoutAvatar';
+import cardExampleExpandableCode from '!raw!./ExampleExpandable';
+import CardExampleExpandable from './ExampleExpandable';
 import cardExampleControlledCode from '!raw!./ExampleControlled';
 import CardExampleControlled from './ExampleControlled';
 
-import cardCode from '!raw!material-ui/lib/Card/Card';
-import cardActionsCode from '!raw!material-ui/lib/Card/CardActions';
-import cardHeaderCode from '!raw!material-ui/lib/Card/CardHeader';
-import cardMediaCode from '!raw!material-ui/lib/Card/CardMedia';
-import cardTextCode from '!raw!material-ui/lib/Card/CardText';
-import cardTitleCode from '!raw!material-ui/lib/Card/CardTitle';
+import cardCode from '!raw!material-ui/Card/Card';
+import cardActionsCode from '!raw!material-ui/Card/CardActions';
+import cardHeaderCode from '!raw!material-ui/Card/CardHeader';
+import cardMediaCode from '!raw!material-ui/Card/CardMedia';
+import cardTextCode from '!raw!material-ui/Card/CardText';
+import cardTitleCode from '!raw!material-ui/Card/CardTitle';
 
 const descriptions = {
   avatar: 'A `Card` containing each of the card components: `CardHeader` (with avatar), `CardMedia` (with overlay), ' +
@@ -43,9 +43,9 @@ const CardPage = () => (
     <CodeExample
       title="Expandable example"
       description={descriptions.simple}
-      code={cardExampleWithoutAvatarCode}
+      code={cardExampleExpandableCode}
     >
-      <CardExampleWithoutAvatar />
+      <CardExampleExpandable />
     </CodeExample>
     <CodeExample
       title="Controlled example"

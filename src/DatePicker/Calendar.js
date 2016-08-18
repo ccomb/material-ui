@@ -1,100 +1,91 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import EventListener from 'react-event-listener';
-import DateTime from '../utils/dateTime';
 import keycode from 'keycode';
 import transitions from '../styles/transitions';
+import CalendarActionButtons from './CalendarActionButtons';
 import CalendarMonth from './CalendarMonth';
 import CalendarYear from './CalendarYear';
 import CalendarToolbar from './CalendarToolbar';
 import DateDisplay from './DateDisplay';
 import SlideInTransitionGroup from '../internal/SlideIn';
-import ClearFix from '../internal/ClearFix';
-import getMuiTheme from '../styles/getMuiTheme';
+
+import {
+  addDays,
+  addMonths,
+  addYears,
+  cloneDate,
+  dateTimeFormat,
+  isAfterDate,
+  isBeforeDate,
+  getWeekArray,
+  getFirstDayOfMonth,
+  localizedWeekday,
+  monthDiff,
+} from './dateUtils';
 
 const daysArray = [...Array(7)];
 
-const Calendar = React.createClass({
+class Calendar extends Component {
+  static propTypes = {
+    DateTimeFormat: PropTypes.func.isRequired,
+    autoOk: PropTypes.bool,
+    cancelLabel: PropTypes.node,
+    disableYearSelection: PropTypes.bool,
+    firstDayOfWeek: PropTypes.number,
+    initialDate: PropTypes.object,
+    locale: PropTypes.string.isRequired,
+    maxDate: PropTypes.object,
+    minDate: PropTypes.object,
+    mode: PropTypes.oneOf(['portrait', 'landscape']),
+    okLabel: PropTypes.node,
+    onTouchTapCancel: PropTypes.func,
+    onTouchTapDay: PropTypes.func,
+    onTouchTapOk: PropTypes.func,
+    open: PropTypes.bool,
+    shouldDisableDate: PropTypes.func,
+  };
 
-  propTypes: {
-    DateTimeFormat: React.PropTypes.func.isRequired,
-    disableYearSelection: React.PropTypes.bool,
-    firstDayOfWeek: React.PropTypes.number,
-    initialDate: React.PropTypes.object,
-    locale: React.PropTypes.string.isRequired,
-    maxDate: React.PropTypes.object,
-    minDate: React.PropTypes.object,
-    mode: React.PropTypes.oneOf(['portrait', 'landscape']),
-    onDayTouchTap: React.PropTypes.func,
-    open: React.PropTypes.bool,
-    shouldDisableDate: React.PropTypes.func,
-  },
+  static defaultProps = {
+    DateTimeFormat: dateTimeFormat,
+    disableYearSelection: false,
+    initialDate: new Date(),
+    locale: 'en-US',
+    minDate: addYears(new Date(), -100),
+    maxDate: addYears(new Date(), 100),
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  state = {
+    displayDate: undefined,
+    displayMonthDay: true,
+    selectedDate: undefined,
+    transitionDirection: 'left',
+    transitionEnter: true,
+  };
 
-  getDefaultProps() {
-    return {
-      disableYearSelection: false,
-      initialDate: new Date(),
-      minDate: DateTime.addYears(new Date(), -100),
-      maxDate: DateTime.addYears(new Date(), 100),
-    };
-  },
-
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-      displayDate: DateTime.getFirstDayOfMonth(this.props.initialDate),
-      displayMonthDay: true,
+  componentWillMount() {
+    this.setState({
+      displayDate: getFirstDayOfMonth(this.props.initialDate),
       selectedDate: this.props.initialDate,
-      transitionDirection: 'left',
-      transitionEnter: true,
-    };
-  },
+    });
+  }
 
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    const muiTheme = nextContext.muiTheme || this.state.muiTheme;
-
+  componentWillReceiveProps(nextProps) {
     if (nextProps.initialDate !== this.props.initialDate) {
-      const d = nextProps.initialDate || new Date();
+      const date = nextProps.initialDate || new Date();
       this.setState({
-        displayDate: DateTime.getFirstDayOfMonth(d),
-        selectedDate: d,
+        displayDate: getFirstDayOfMonth(date),
+        selectedDate: date,
       });
     }
-
-    this.setState({muiTheme});
-  },
-
-  _yearSelector() {
-    if (this.props.disableYearSelection) return;
-
-    return (
-      <CalendarYear
-        key={'years'}
-        displayDate={this.state.displayDate}
-        onYearTouchTap={this.handleYearTouchTap}
-        selectedDate={this.state.selectedDate}
-        minDate={this.props.minDate}
-        maxDate={this.props.maxDate}
-      />
-    );
-  },
+  }
 
   getSelectedDate() {
     return this.state.selectedDate;
-  },
+  }
 
   isSelectedDateDisabled() {
     if (!this.state.displayMonthDay) {
@@ -102,22 +93,22 @@ const Calendar = React.createClass({
     }
 
     return this.refs.calendar.isSelectedDateDisabled();
-  },
+  }
 
-  _addSelectedDays(days) {
-    this._setSelectedDate(DateTime.addDays(this.state.selectedDate, days));
-  },
+  addSelectedDays(days) {
+    this.setSelectedDate(addDays(this.state.selectedDate, days));
+  }
 
-  _addSelectedMonths(months) {
-    this._setSelectedDate(DateTime.addMonths(this.state.selectedDate, months));
-  },
+  addSelectedMonths(months) {
+    this.setSelectedDate(addMonths(this.state.selectedDate, months));
+  }
 
-  _addSelectedYears(years) {
-    this._setSelectedDate(DateTime.addYears(this.state.selectedDate, years));
-  },
+  addSelectedYears(years) {
+    this.setSelectedDate(addYears(this.state.selectedDate, years));
+  }
 
-  _setDisplayDate(d, newSelectedDate) {
-    const newDisplayDate = DateTime.getFirstDayOfMonth(d);
+  setDisplayDate(date, newSelectedDate) {
+    const newDisplayDate = getFirstDayOfMonth(date);
     const direction = newDisplayDate > this.state.displayDate ? 'left' : 'right';
 
     if (newDisplayDate !== this.state.displayDate) {
@@ -127,233 +118,256 @@ const Calendar = React.createClass({
         selectedDate: newSelectedDate || this.state.selectedDate,
       });
     }
-  },
+  }
 
-  _setSelectedDate(date) {
+  setSelectedDate(date) {
     let adjustedDate = date;
-    if (DateTime.isBeforeDate(date, this.props.minDate)) {
+    if (isBeforeDate(date, this.props.minDate)) {
       adjustedDate = this.props.minDate;
-    } else if (DateTime.isAfterDate(date, this.props.maxDate)) {
+    } else if (isAfterDate(date, this.props.maxDate)) {
       adjustedDate = this.props.maxDate;
     }
 
-    const newDisplayDate = DateTime.getFirstDayOfMonth(adjustedDate);
+    const newDisplayDate = getFirstDayOfMonth(adjustedDate);
     if (newDisplayDate !== this.state.displayDate) {
-      this._setDisplayDate(newDisplayDate, adjustedDate);
+      this.setDisplayDate(newDisplayDate, adjustedDate);
     } else {
       this.setState({
         selectedDate: adjustedDate,
       });
     }
-  },
+  }
 
-  handleDayTouchTap(event, date) {
-    this._setSelectedDate(date);
-    if (this.props.onDayTouchTap) this.props.onDayTouchTap(event, date);
-  },
+  handleTouchTapDay = (event, date) => {
+    this.setSelectedDate(date);
+    if (this.props.onTouchTapDay) this.props.onTouchTapDay(event, date);
+  };
 
-  handleMonthChange(months) {
+  handleMonthChange = (months) => {
     this.setState({
       transitionDirection: months >= 0 ? 'left' : 'right',
-      displayDate: DateTime.addMonths(this.state.displayDate, months),
+      displayDate: addMonths(this.state.displayDate, months),
     });
-  },
+  };
 
-  handleYearTouchTap(event, year) {
-    const date = DateTime.clone(this.state.selectedDate);
+  handleTouchTapYear = (event, year) => {
+    const date = cloneDate(this.state.selectedDate);
     date.setFullYear(year);
-    this._setSelectedDate(date, event);
-  },
+    this.setSelectedDate(date, event);
+  };
 
-  _getToolbarInteractions() {
+  getToolbarInteractions() {
     return {
-      prevMonth: DateTime.monthDiff(this.state.displayDate, this.props.minDate) > 0,
-      nextMonth: DateTime.monthDiff(this.state.displayDate, this.props.maxDate) < 0,
+      prevMonth: monthDiff(this.state.displayDate, this.props.minDate) > 0,
+      nextMonth: monthDiff(this.state.displayDate, this.props.maxDate) < 0,
     };
-  },
+  }
 
-  handleTouchTapMonthDay() {
+  handleTouchTapDateDisplayMonthDay = () => {
     this.setState({
       displayMonthDay: true,
     });
-  },
+  };
 
-  handleTouchTapClick() {
+  handleTouchTapDateDisplayYear = () => {
     this.setState({
       displayMonthDay: false,
     });
-  },
+  };
 
-  handleKeyDown(event) {
+  handleWindowKeyDown = (event) => {
     if (this.props.open) {
       switch (keycode(event)) {
         case 'up':
           if (event.altKey && event.shiftKey) {
-            this._addSelectedYears(-1);
+            this.addSelectedYears(-1);
           } else if (event.shiftKey) {
-            this._addSelectedMonths(-1);
+            this.addSelectedMonths(-1);
           } else {
-            this._addSelectedDays(-7);
+            this.addSelectedDays(-7);
           }
           break;
 
         case 'down':
           if (event.altKey && event.shiftKey) {
-            this._addSelectedYears(1);
+            this.addSelectedYears(1);
           } else if (event.shiftKey) {
-            this._addSelectedMonths(1);
+            this.addSelectedMonths(1);
           } else {
-            this._addSelectedDays(7);
+            this.addSelectedDays(7);
           }
           break;
 
         case 'right':
           if (event.altKey && event.shiftKey) {
-            this._addSelectedYears(1);
+            this.addSelectedYears(1);
           } else if (event.shiftKey) {
-            this._addSelectedMonths(1);
+            this.addSelectedMonths(1);
           } else {
-            this._addSelectedDays(1);
+            this.addSelectedDays(1);
           }
           break;
 
         case 'left':
           if (event.altKey && event.shiftKey) {
-            this._addSelectedYears(-1);
+            this.addSelectedYears(-1);
           } else if (event.shiftKey) {
-            this._addSelectedMonths(-1);
+            this.addSelectedMonths(-1);
           } else {
-            this._addSelectedDays(-1);
+            this.addSelectedDays(-1);
           }
           break;
       }
     }
-  },
+  };
+
+  yearSelector() {
+    if (!this.props.disableYearSelection) return (
+      <CalendarYear
+        key={'years'}
+        displayDate={this.state.displayDate}
+        onTouchTapYear={this.handleTouchTapYear}
+        selectedDate={this.state.selectedDate}
+        minDate={this.props.minDate}
+        maxDate={this.props.maxDate}
+      />
+    );
+  }
 
   render() {
-    const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
-    const yearCount = DateTime.yearDiff(this.props.maxDate, this.props.minDate) + 1;
-    const weekCount = DateTime.getWeekArray(this.state.displayDate, this.props.firstDayOfWeek).length;
-    const toolbarInteractions = this._getToolbarInteractions();
+    const {prepareStyles} = this.context.muiTheme;
+    const weekCount = getWeekArray(this.state.displayDate, this.props.firstDayOfWeek).length;
+    const toolbarInteractions = this.getToolbarInteractions();
     const isLandscape = this.props.mode === 'landscape';
+    const {calendarTextColor} = this.context.muiTheme.datePicker;
+
     const styles = {
       root: {
-        fontSize: 12,
+        color: calendarTextColor,
+        userSelect: 'none',
+        width: isLandscape ? 479 : 310,
+      },
+      calendar: {
+        display: 'flex',
+        flexDirection: 'column',
       },
       calendarContainer: {
-        width: isLandscape ? 320 : '100%',
-        height: weekCount === 5 ? 284 :
-          weekCount === 6 ? 324 : 244,
-        float: isLandscape ? 'right' : 'none',
-        transition: transitions.easeOut('150ms', 'height'),
-        overflow: 'hidden',
+        display: 'flex',
+        alignContent: 'space-between',
+        justifyContent: 'space-between',
+        flexDirection: 'column',
+        fontSize: 12,
+        fontWeight: 400,
+        padding: '0px 8px',
+        transition: transitions.easeOut(),
       },
       yearContainer: {
-        width: 280,
+        display: 'flex',
+        justifyContent: 'space-between',
+        flexDirection: 'column',
+        height: 272,
+        marginTop: 10,
         overflow: 'hidden',
-        height: yearCount < 6 ? yearCount * 56 + 10 :
-          weekCount === 5 ? 284 :
-          weekCount === 6 ? 324 : 244,
-        float: isLandscape ? 'right' : 'none',
-      },
-      dateDisplay: {
-        width: isLandscape ? 120 : '',
-        height: isLandscape ?
-          weekCount === 5 ? 238 :
-          weekCount === 6 ? 278 :
-          198 : 'auto',
-        float: isLandscape ? 'left' : 'none',
+        width: 310,
       },
       weekTitle: {
-        padding: '0 14px',
-        lineHeight: '12px',
-        opacity: '0.5',
-        height: 12,
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         fontWeight: '500',
-        margin: 0,
+        height: 20,
+        lineHeight: '15px',
+        opacity: '0.5',
+        textAlign: 'center',
       },
       weekTitleDay: {
-        listStyle: 'none',
-        float: 'left',
-        width: 37,
-        textAlign: 'center',
-        margin: '0 2px',
+        width: 42,
+      },
+      transitionSlide: {
+        height: 214,
       },
     };
 
     const weekTitleDayStyle = prepareStyles(styles.weekTitleDay);
+
     const {
+      cancelLabel,
       DateTimeFormat,
-      locale,
       firstDayOfWeek,
+      locale,
+      okLabel,
+      onTouchTapCancel, // eslint-disable-line no-unused-vars
+      onTouchTapOk, // eslint-disable-line no-unused-vars
     } = this.props;
 
     return (
-      <ClearFix style={styles.root}>
+      <div style={prepareStyles(styles.root)}>
         <EventListener
-          elementName="window"
-          onKeyDown={this.handleKeyDown}
+          target="window"
+          onKeyDown={this.handleWindowKeyDown}
         />
         <DateDisplay
           DateTimeFormat={DateTimeFormat}
-          locale={locale}
           disableYearSelection={this.props.disableYearSelection}
-          style={styles.dateDisplay}
-          selectedDate={this.state.selectedDate}
-          onTouchTapMonthDay={this.handleTouchTapMonthDay}
-          onTouchTapYear={this.handleTouchTapClick}
+          onTouchTapMonthDay={this.handleTouchTapDateDisplayMonthDay}
+          onTouchTapYear={this.handleTouchTapDateDisplayYear}
+          locale={locale}
           monthDaySelected={this.state.displayMonthDay}
           mode={this.props.mode}
-          muiTheme={this.state.muiTheme}
+          selectedDate={this.state.selectedDate}
           weekCount={weekCount}
         />
-        {this.state.displayMonthDay &&
-          <div style={prepareStyles(styles.calendarContainer)}>
-            <CalendarToolbar
-              DateTimeFormat={DateTimeFormat}
-              locale={locale}
-              displayDate={this.state.displayDate}
-              onMonthChange={this.handleMonthChange}
-              prevMonth={toolbarInteractions.prevMonth}
-              nextMonth={toolbarInteractions.nextMonth}
-            />
-            <ClearFix
-              elementType="ul"
-              style={styles.weekTitle}
-            >
-              {daysArray.map((event, i) => (
-                <li key={i} style={weekTitleDayStyle}>
-                  {DateTime.localizedWeekday(DateTimeFormat, locale, i, firstDayOfWeek)}
-                </li>
-              ))}
-            </ClearFix>
-            <SlideInTransitionGroup direction={this.state.transitionDirection}>
-              <CalendarMonth
-                key={this.state.displayDate.toDateString()}
-                ref="calendar"
+        <div style={prepareStyles(styles.calendar)}>
+          {this.state.displayMonthDay &&
+            <div style={prepareStyles(styles.calendarContainer)}>
+              <CalendarToolbar
+                DateTimeFormat={DateTimeFormat}
+                locale={locale}
                 displayDate={this.state.displayDate}
-                onDayTouchTap={this.handleDayTouchTap}
-                selectedDate={this.state.selectedDate}
-                minDate={this.props.minDate}
-                maxDate={this.props.maxDate}
-                shouldDisableDate={this.props.shouldDisableDate}
-                firstDayOfWeek={this.props.firstDayOfWeek}
+                onMonthChange={this.handleMonthChange}
+                prevMonth={toolbarInteractions.prevMonth}
+                nextMonth={toolbarInteractions.nextMonth}
               />
-            </SlideInTransitionGroup>
-          </div>
-        }
-        {!this.state.displayMonthDay &&
-          <div style={prepareStyles(styles.yearContainer)}>
-            {this._yearSelector()}
-          </div>
-        }
-      </ClearFix>
+              <div style={prepareStyles(styles.weekTitle)}>
+                {daysArray.map((event, i) => (
+                  <span key={i} style={weekTitleDayStyle}>
+                    {localizedWeekday(DateTimeFormat, locale, i, firstDayOfWeek)}
+                  </span>
+                ))}
+              </div>
+              <SlideInTransitionGroup direction={this.state.transitionDirection} style={styles.transitionSlide}>
+                <CalendarMonth
+                  displayDate={this.state.displayDate}
+                  firstDayOfWeek={this.props.firstDayOfWeek}
+                  key={this.state.displayDate.toDateString()}
+                  minDate={this.props.minDate}
+                  maxDate={this.props.maxDate}
+                  onTouchTapDay={this.handleTouchTapDay}
+                  ref="calendar"
+                  selectedDate={this.state.selectedDate}
+                  shouldDisableDate={this.props.shouldDisableDate}
+                />
+              </SlideInTransitionGroup>
+            </div>
+          }
+          {!this.state.displayMonthDay &&
+            <div style={prepareStyles(styles.yearContainer)}>
+              {this.yearSelector()}
+            </div>
+          }
+          {okLabel &&
+            <CalendarActionButtons
+              autoOk={this.props.autoOk}
+              cancelLabel={cancelLabel}
+              okLabel={okLabel}
+              onTouchTapCancel={onTouchTapCancel}
+              onTouchTapOk={onTouchTapOk}
+            />
+          }
+        </div>
+      </div>
     );
-  },
-
-});
+  }
+}
 
 export default Calendar;

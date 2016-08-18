@@ -1,122 +1,90 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import transitions from '../styles/transitions';
-import getMuiTheme from '../styles/getMuiTheme';
 
-const SvgIcon = React.createClass({
+class SvgIcon extends Component {
+  static muiName = 'SvgIcon';
 
-  propTypes: {
+  static propTypes = {
     /**
      * Elements passed into the SVG Icon.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * This is the fill color of the svg icon.
      * If not specified, this component will default
      * to muiTheme.palette.textColor.
      */
-    color: React.PropTypes.string,
-
+    color: PropTypes.string,
     /**
      * This is the icon color when the mouse hovers over the icon.
      */
-    hoverColor: React.PropTypes.string,
-
-    /**
-     * Function called when mouse enters this element.
-     */
-    onMouseEnter: React.PropTypes.func,
-
-    /**
-     * Function called when mouse leaves this element.
-     */
-    onMouseLeave: React.PropTypes.func,
-
+    hoverColor: PropTypes.string,
+    /** @ignore */
+    onMouseEnter: PropTypes.func,
+    /** @ignore */
+    onMouseLeave: PropTypes.func,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
-     * Allows you to redifine what the coordinates
+     * Allows you to redefine what the coordinates
      * without units mean inside an svg element. For example,
      * if the SVG element is 500 (width) by 200 (height), and you
      * pass viewBox="0 0 50 20", this means that the coordinates inside
      * the svg will go from the top left corner (0,0) to bottom right (50,20)
      * and each unit will be worth 10px.
      */
-    viewBox: React.PropTypes.string,
-  },
+    viewBox: PropTypes.string,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    onMouseEnter: () => {},
+    onMouseLeave: () => {},
+    viewBox: '0 0 24 24',
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      onMouseEnter: () => {},
-      onMouseLeave: () => {},
-      viewBox: '0 0 24 24',
-    };
-  },
+  state = {
+    hovered: false,
+  };
 
-  getInitialState() {
-    return {
-      hovered: false,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
-
-  handleMouseLeave(event) {
+  handleMouseLeave = (event) => {
     this.setState({hovered: false});
     this.props.onMouseLeave(event);
-  },
+  };
 
-  handleMouseEnter(event) {
+  handleMouseEnter = (event) => {
     this.setState({hovered: true});
     this.props.onMouseEnter(event);
-  },
+  };
 
   render() {
     const {
       children,
       color,
       hoverColor,
-      onMouseEnter,
-      onMouseLeave,
+      onMouseEnter, // eslint-disable-line no-unused-vars
+      onMouseLeave, // eslint-disable-line no-unused-vars
       style,
       viewBox,
       ...other,
     } = this.props;
 
     const {
-      baseTheme,
+      svgIcon,
       prepareStyles,
-    } = this.state.muiTheme;
+    } = this.context.muiTheme;
 
-    const offColor = color ? color :
-      style && style.fill ? style.fill :
-      baseTheme.palette.textColor;
+    const offColor = color ? color : 'currentColor';
     const onColor = hoverColor ? hoverColor : offColor;
 
     const mergedStyles = Object.assign({
       display: 'inline-block',
+      color: svgIcon.color,
       fill: this.state.hovered ? onColor : offColor,
       height: 24,
       width: 24,
@@ -135,8 +103,7 @@ const SvgIcon = React.createClass({
         {children}
       </svg>
     );
-  },
-
-});
+  }
+}
 
 export default SvgIcon;

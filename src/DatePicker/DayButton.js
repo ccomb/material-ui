@@ -1,24 +1,12 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import Transition from '../styles/transitions';
-import DateTime from '../utils/dateTime';
+import {isEqualDate} from './dateUtils';
 import EnhancedButton from '../internal/EnhancedButton';
-import getMuiTheme from '../styles/getMuiTheme';
 
-function getStyles(props, state) {
-  const {
-    date,
-    disabled,
-    selected,
-  } = props;
-
-  const {
-    hover,
-  } = state;
-
-  const {
-    baseTheme,
-    datePicker,
-  } = state.muiTheme;
+function getStyles(props, context, state) {
+  const {date, disabled, selected} = props;
+  const {hover} = state;
+  const {baseTheme, datePicker} = context.muiTheme;
 
   let labelColor = baseTheme.palette.textColor;
   let buttonStateOpacity = 0;
@@ -28,126 +16,102 @@ function getStyles(props, state) {
     labelColor = datePicker.selectTextColor;
     buttonStateOpacity = selected ? 1 : 0.6;
     buttonStateTransform = 'scale(1)';
-  } else if (DateTime.isEqualDate(date, new Date())) {
+  } else if (isEqualDate(date, new Date())) {
     labelColor = datePicker.color;
   }
 
   return {
     root: {
       boxSizing: 'border-box',
-      WebkitTapHighlightColor: 'rgba(0,0,0,0)', // Remove mobile color flashing (deprecated)
+      fontWeight: '400',
+      opacity: disabled && '0.4',
+      padding: '4px 0px',
       position: 'relative',
-      float: 'left',
-      width: 41,
-      padding: '4px 2px',
-      opacity: disabled && '0.6',
+      WebkitTapHighlightColor: 'rgba(0,0,0,0)', // Remove mobile color flashing (deprecated)
+      width: 42,
     },
     label: {
-      position: 'relative',
       color: labelColor,
+      fontWeight: '400',
+      position: 'relative',
     },
     buttonState: {
-      position: 'absolute',
-      height: 36,
-      width: 36,
-      top: 2,
-      opacity: buttonStateOpacity,
+      backgroundColor: datePicker.selectColor,
       borderRadius: '50%',
+      height: 34,
+      left: 4,
+      opacity: buttonStateOpacity,
+      position: 'absolute',
+      top: 0,
       transform: buttonStateTransform,
       transition: Transition.easeOut(),
-      backgroundColor: datePicker.selectColor,
+      width: 34,
     },
   };
 }
 
-const DayButton = React.createClass({
+class DayButton extends Component {
+  static propTypes = {
+    date: PropTypes.object,
+    disabled: PropTypes.bool,
+    onKeyboardFocus: PropTypes.func,
+    onTouchTap: PropTypes.func,
+    selected: PropTypes.bool,
+  };
 
-  propTypes: {
-    date: React.PropTypes.object,
-    disabled: React.PropTypes.bool,
-    onKeyboardFocus: React.PropTypes.func,
-    onTouchTap: React.PropTypes.func,
-    selected: React.PropTypes.bool,
-  },
+  static defaultProps = {
+    selected: false,
+    disabled: false,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  state = {
+    hover: false,
+  };
 
-  getDefaultProps() {
-    return {
-      selected: false,
-      disabled: false,
-    };
-  },
-
-  getInitialState() {
-    return {
-      hover: false,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
-
-  handleMouseEnter() {
+  handleMouseEnter = () => {
     if (!this.props.disabled) this.setState({hover: true});
-  },
+  };
 
-  handleMouseLeave() {
+  handleMouseLeave = () => {
     if (!this.props.disabled) this.setState({hover: false});
-  },
+  };
 
-  handleTouchTap(event) {
+  handleTouchTap = (event) => {
     if (!this.props.disabled && this.props.onTouchTap) this.props.onTouchTap(event, this.props.date);
-  },
+  };
 
-  handleKeyboardFocus(event, keyboardFocused) {
+  handleKeyboardFocus = (event, keyboardFocused) => {
     if (!this.props.disabled && this.props.onKeyboardFocus) {
       this.props.onKeyboardFocus(event, keyboardFocused, this.props.date);
     }
-  },
+  };
 
   render() {
     const {
-      date,
-      onTouchTap,
-      selected,
+      date, // eslint-disable-line no-unused-vars
+      onTouchTap, // eslint-disable-line no-unused-vars
+      selected, // eslint-disable-line no-unused-vars
       ...other,
     } = this.props;
 
-    const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
-    const styles = getStyles(this.props, this.state);
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context, this.state);
 
     return this.props.date ? (
       <EnhancedButton
         {...other}
-        style={styles.root}
-        hoverStyle={styles.hover}
         disabled={this.props.disabled}
         disableFocusRipple={true}
         disableTouchRipple={true}
+        onKeyboardFocus={this.handleKeyboardFocus}
         onMouseEnter={this.handleMouseEnter}
         onMouseLeave={this.handleMouseLeave}
         onTouchTap={this.handleTouchTap}
-        onKeyboardFocus={this.handleKeyboardFocus}
+        style={styles.root}
       >
         <div style={prepareStyles(styles.buttonState)} />
         <span style={prepareStyles(styles.label)}>{this.props.date.getDate()}</span>
@@ -155,8 +119,7 @@ const DayButton = React.createClass({
     ) : (
       <span style={prepareStyles(styles.root)} />
     );
-  },
-
-});
+  }
+}
 
 export default DayButton;

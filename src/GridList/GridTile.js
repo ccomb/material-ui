@@ -1,11 +1,10 @@
-import React from 'react';
-import getMuiTheme from '../styles/getMuiTheme';
+import React, {Component, PropTypes} from 'react';
 
-function getStyles(props, state) {
+function getStyles(props, context) {
   const {
     baseTheme,
     gridTile,
-  } = state.muiTheme;
+  } = context.muiTheme;
 
   const actionPos = props.actionIcon && props.actionPosition;
 
@@ -58,32 +57,27 @@ function getStyles(props, state) {
   return styles;
 }
 
-const GridTile = React.createClass({
-
-  propTypes: {
+class GridTile extends Component {
+  static propTypes = {
     /**
      * An IconButton element to be used as secondary action target
      * (primary action target is the tile itself).
      */
-    actionIcon: React.PropTypes.element,
-
+    actionIcon: PropTypes.element,
     /**
      * Position of secondary action IconButton.
      */
-    actionPosition: React.PropTypes.oneOf(['left', 'right']),
-
+    actionPosition: PropTypes.oneOf(['left', 'right']),
     /**
      * Theoretically you can pass any node as children, but the main use case is to pass an img,
      * in whichcase GridTile takes care of making the image "cover" available space
      * (similar to background-size: cover or to object-fit:cover).
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * Width of the tile in number of grid cells.
      */
-    cols: React.PropTypes.number,
-
+    cols: PropTypes.number,
     /**
      * Either a string used as tag name for the tile root element, or a ReactElement.
      * This is useful when you have, for example, a custom implementation of
@@ -91,96 +85,71 @@ const GridTile = React.createClass({
      * In case you pass a ReactElement, please ensure that it passes all props,
      * accepts styles overrides and render it's children.
      */
-    containerElement: React.PropTypes.oneOfType([
-      React.PropTypes.string,
-      React.PropTypes.element,
+    containerElement: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.element,
     ]),
-
     /**
      * Height of the tile in number of grid cells.
      */
-    rows: React.PropTypes.number,
-
+    rows: PropTypes.number,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
      * String or element serving as subtitle (support text).
      */
-    subtitle: React.PropTypes.node,
-
+    subtitle: PropTypes.node,
     /**
      * Title to be displayed on tile.
      */
-    title: React.PropTypes.node,
-
+    title: PropTypes.node,
     /**
      * Style used for title bar background.
      * Useful for setting custom gradients for example
      */
-    titleBackground: React.PropTypes.string,
-
+    titleBackground: PropTypes.string,
     /**
      * Position of the title bar (container of title, subtitle and action icon).
      */
-    titlePosition: React.PropTypes.oneOf(['top', 'bottom']),
-  },
+    titlePosition: PropTypes.oneOf(['top', 'bottom']),
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    titlePosition: 'bottom',
+    titleBackground: 'rgba(0, 0, 0, 0.4)',
+    actionPosition: 'right',
+    cols: 1,
+    rows: 1,
+    containerElement: 'div',
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  getDefaultProps() {
-    return {
-      titlePosition: 'bottom',
-      titleBackground: 'rgba(0, 0, 0, 0.4)',
-      actionPosition: 'right',
-      cols: 1,
-      rows: 1,
-      containerElement: 'div',
-    };
-  },
-
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
   componentDidMount() {
-    this._ensureImageCover();
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
+    this.ensureImageCover();
+  }
 
   componentDidUpdate() {
-    this._ensureImageCover();
-  },
+    this.ensureImageCover();
+  }
 
-  _ensureImageCover() {
+  ensureImageCover() {
     let imgEl = this.refs.img;
 
     if (imgEl) {
       const fit = () => {
         if (imgEl.offsetWidth < imgEl.parentNode.offsetWidth) {
+          const {isRtl} = this.context.muiTheme;
           imgEl.style.height = 'auto';
-          imgEl.style.left = '0';
+          if (isRtl) {
+            imgEl.style.right = '0';
+          } else {
+            imgEl.style.left = '0';
+          }
           imgEl.style.width = '100%';
           imgEl.style.top = '50%';
           imgEl.style.transform = imgEl.style.WebkitTransform = 'translateY(-50%)';
@@ -194,29 +163,24 @@ const GridTile = React.createClass({
         imgEl.addEventListener('load', fit);
       }
     }
-  },
-
+  }
 
   render() {
     const {
       title,
       subtitle,
-      titlePosition,
-      titleBackground,
-      actionIcon,
-      actionPosition,
+      titlePosition, // eslint-disable-line no-unused-vars
+      titleBackground, // eslint-disable-line no-unused-vars
+      actionIcon, // eslint-disable-line no-unused-vars
+      actionPosition, // eslint-disable-line no-unused-vars
       style,
       children,
       containerElement,
       ...other,
     } = this.props;
 
-    const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
-    const styles = getStyles(this.props, this.state);
-
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context);
     const mergedRootStyles = Object.assign(styles.root, style);
 
     let titleBar = null;
@@ -259,7 +223,7 @@ const GridTile = React.createClass({
     return React.isValidElement(containerElement) ?
       React.cloneElement(containerElement, containerProps, [newChildren, titleBar]) :
       React.createElement(containerElement, containerProps, [newChildren, titleBar]);
-  },
-});
+  }
+}
 
 export default GridTile;

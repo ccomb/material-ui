@@ -1,53 +1,36 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import DateTime from '../utils/dateTime';
 import YearButton from './YearButton';
-import getMuiTheme from '../styles/getMuiTheme';
+import {cloneDate} from './dateUtils';
 
-const CalendarYear = React.createClass({
+class CalendarYear extends Component {
+  static propTypes = {
+    displayDate: PropTypes.object.isRequired,
+    maxDate: PropTypes.object,
+    minDate: PropTypes.object,
+    onTouchTapYear: PropTypes.func,
+    selectedDate: PropTypes.object.isRequired,
+    wordings: PropTypes.object,
+  };
 
-  propTypes: {
-    displayDate: React.PropTypes.object.isRequired,
-    maxDate: React.PropTypes.object,
-    minDate: React.PropTypes.object,
-    onYearTouchTap: React.PropTypes.func,
-    selectedDate: React.PropTypes.object.isRequired,
-  },
-
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
   componentDidMount() {
-    this._scrollToSelectedYear();
-  },
+    this.scrollToSelectedYear();
+  }
 
   componentDidUpdate() {
-    this._scrollToSelectedYear();
-  },
+    this.scrollToSelectedYear();
+  }
 
-  _getYears() {
+  getYears() {
     const minYear = this.props.minDate.getFullYear();
     const maxYear = this.props.maxDate.getFullYear();
 
     const years = [];
-    const dateCheck = DateTime.clone(this.props.selectedDate);
+    const dateCheck = cloneDate(this.props.selectedDate);
     for (let year = minYear; year <= maxYear; year++) {
       dateCheck.setFullYear(year);
       const selected = this.props.selectedDate.getFullYear() === year;
@@ -59,9 +42,9 @@ const CalendarYear = React.createClass({
       const yearButton = (
         <YearButton
           key={`yb${year}`}
-          year={year}
-          onTouchTap={this.handleTouchTap}
+          onTouchTap={this.handleTouchTapYear}
           selected={selected}
+          year={year}
           {...selectedProps}
         />
       );
@@ -70,9 +53,9 @@ const CalendarYear = React.createClass({
     }
 
     return years;
-  },
+  }
 
-  _scrollToSelectedYear() {
+  scrollToSelectedYear() {
     if (this.refs.selectedYearButton === undefined) return;
 
     const container = ReactDOM.findDOMNode(this);
@@ -83,33 +66,41 @@ const CalendarYear = React.createClass({
 
     const scrollYOffset = (yearButtonNode.offsetTop + yearButtonNodeHeight / 2) - containerHeight / 2;
     container.scrollTop = scrollYOffset;
-  },
+  }
 
-  handleTouchTap(event, year) {
-    if (this.props.onYearTouchTap) this.props.onYearTouchTap(event, year);
-  },
+  handleTouchTapYear = (event, year) => {
+    if (this.props.onTouchTapYear) this.props.onTouchTapYear(event, year);
+  };
 
   render() {
-    const years = this._getYears();
-    const backgroundColor = this.state.muiTheme.datePicker.calendarYearBackgroundColor;
+    const years = this.getYears();
+    const backgroundColor = this.context.muiTheme.datePicker.calendarYearBackgroundColor;
+    const {prepareStyles} = this.context.muiTheme;
     const styles = {
-      position: 'relative',
-      height: 'inherit',
-      lineHeight: '36px',
-      textAlign: 'center',
-      padding: '8px 14px 0 14px',
-      backgroundColor: backgroundColor,
-      overflowX: 'hidden',
-      overflowY: 'scroll',
+      root: {
+        backgroundColor: backgroundColor,
+        height: 'inherit',
+        lineHeight: '35px',
+        overflowX: 'hidden',
+        overflowY: 'scroll',
+        position: 'relative',
+      },
+      child: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        minHeight: '100%',
+      },
     };
 
     return (
-      <div style={styles}>
-        {years}
+      <div style={prepareStyles(styles.root)}>
+        <div style={prepareStyles(styles.child)}>
+          {years}
+        </div>
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default CalendarYear;

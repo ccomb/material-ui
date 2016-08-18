@@ -1,156 +1,250 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import PureRenderMixin from 'react-addons-pure-render-mixin';
-import ColorManipulator from '../utils/colorManipulator';
+import shallowEqual from 'recompose/shallowEqual';
+import {fade} from '../utils/colorManipulator';
 import transitions from '../styles/transitions';
 import EnhancedButton from '../internal/EnhancedButton';
 import IconButton from '../IconButton';
-import OpenIcon from '../svg-icons/navigation/arrow-drop-up';
-import CloseIcon from '../svg-icons/navigation/arrow-drop-down';
-import NestedList from './NestedIist';
-import getMuiTheme from '../styles/getMuiTheme';
+import OpenIcon from '../svg-icons/navigation/expand-less';
+import CloseIcon from '../svg-icons/navigation/expand-more';
+import NestedList from './NestedList';
 
-const ListItem = React.createClass({
+function getStyles(props, context, state) {
+  const {
+    insetChildren,
+    leftAvatar,
+    leftCheckbox,
+    leftIcon,
+    nestedLevel,
+    rightAvatar,
+    rightIcon,
+    rightIconButton,
+    rightToggle,
+    secondaryText,
+    secondaryTextLines,
+  } = props;
 
-  propTypes: {
+  const {muiTheme} = context;
+  const {listItem} = muiTheme;
+
+  const textColor = muiTheme.baseTheme.palette.textColor;
+  const hoverColor = fade(textColor, 0.1);
+  const singleAvatar = !secondaryText && (leftAvatar || rightAvatar);
+  const singleNoAvatar = !secondaryText && !(leftAvatar || rightAvatar);
+  const twoLine = secondaryText && secondaryTextLines === 1;
+  const threeLine = secondaryText && secondaryTextLines > 1;
+
+  const styles = {
+    root: {
+      backgroundColor: (state.isKeyboardFocused || state.hovered) &&
+      !state.rightIconButtonHovered &&
+      !state.rightIconButtonKeyboardFocused ? hoverColor : null,
+      color: textColor,
+      display: 'block',
+      fontSize: 16,
+      lineHeight: '16px',
+      position: 'relative',
+      transition: transitions.easeOut(),
+    },
+
+    // This inner div is needed so that ripples will span the entire container
+    innerDiv: {
+      marginLeft: nestedLevel * listItem.nestedLevelDepth,
+      paddingLeft: leftIcon || leftAvatar || leftCheckbox || insetChildren ? 72 : 16,
+      paddingRight: rightIcon || rightAvatar || rightIconButton ? 56 : rightToggle ? 72 : 16,
+      paddingBottom: singleAvatar ? 20 : 16,
+      paddingTop: singleNoAvatar || threeLine ? 16 : 20,
+      position: 'relative',
+    },
+
+    icons: {
+      height: 24,
+      width: 24,
+      display: 'block',
+      position: 'absolute',
+      top: twoLine ? 12 : singleAvatar ? 4 : 0,
+      margin: 12,
+    },
+
+    leftIcon: {
+      left: 4,
+    },
+
+    rightIcon: {
+      right: 4,
+    },
+
+    avatars: {
+      position: 'absolute',
+      top: singleAvatar ? 8 : 16,
+    },
+
+    label: {
+      cursor: 'pointer',
+    },
+
+    leftAvatar: {
+      left: 16,
+    },
+
+    rightAvatar: {
+      right: 16,
+    },
+
+    leftCheckbox: {
+      position: 'absolute',
+      display: 'block',
+      width: 24,
+      top: twoLine ? 24 : singleAvatar ? 16 : 12,
+      left: 16,
+    },
+
+    primaryText: {
+    },
+
+    rightIconButton: {
+      position: 'absolute',
+      display: 'block',
+      top: twoLine ? 12 : singleAvatar ? 4 : 0,
+      right: 4,
+    },
+
+    rightToggle: {
+      position: 'absolute',
+      display: 'block',
+      width: 54,
+      top: twoLine ? 25 : singleAvatar ? 17 : 13,
+      right: 8,
+    },
+
+    secondaryText: {
+      fontSize: 14,
+      lineHeight: threeLine ? '18px' : '16px',
+      height: threeLine ? 36 : 16,
+      margin: 0,
+      marginTop: 4,
+      color: listItem.secondaryTextColor,
+
+      // needed for 2 and 3 line ellipsis
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: threeLine ? null : 'nowrap',
+      display: threeLine ? '-webkit-box' : null,
+      WebkitLineClamp: threeLine ? 2 : null,
+      WebkitBoxOrient: threeLine ? 'vertical' : null,
+    },
+  };
+
+  return styles;
+}
+
+class ListItem extends Component {
+  static muiName = 'ListItem';
+
+  static propTypes = {
     /**
      * If true, generate a nested-list-indicator icon when nested list
      * items are detected. Note that an indicator will not be created
      * if a `rightIcon` or `rightIconButton` has been provided to
      * the element.
      */
-    autoGenerateNestedIndicator: React.PropTypes.bool,
-
+    autoGenerateNestedIndicator: PropTypes.bool,
     /**
      * Children passed into the `ListItem`.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * If true, the element will not be able to be focused by the keyboard.
      */
-    disableKeyboardFocus: React.PropTypes.bool,
-
+    disableKeyboardFocus: PropTypes.bool,
     /**
      * If true, the element will not be clickable
      * and will not display hover effects.
      * This is automatically disabled if either `leftCheckbox`
      * or `rightToggle` is set.
      */
-    disabled: React.PropTypes.bool,
-
+    disabled: PropTypes.bool,
     /**
      * If true, the nested `ListItem`s are initially displayed.
      */
-    initiallyOpen: React.PropTypes.bool,
-
+    initiallyOpen: PropTypes.bool,
     /**
      * Override the inline-styles of the inner div element.
      */
-    innerDivStyle: React.PropTypes.object,
-
+    innerDivStyle: PropTypes.object,
     /**
      * If true, the children will be indented by 72px.
      * This is useful if there is no left avatar or left icon.
      */
-    insetChildren: React.PropTypes.bool,
-
+    insetChildren: PropTypes.bool,
     /**
      * This is the `Avatar` element to be displayed on the left side.
      */
-    leftAvatar: React.PropTypes.element,
-
+    leftAvatar: PropTypes.element,
     /**
      * This is the `Checkbox` element to be displayed on the left side.
      */
-    leftCheckbox: React.PropTypes.element,
-
+    leftCheckbox: PropTypes.element,
     /**
      * This is the `SvgIcon` or `FontIcon` to be displayed on the left side.
      */
-    leftIcon: React.PropTypes.element,
-
+    leftIcon: PropTypes.element,
     /**
      * An array of `ListItem`s to nest underneath the current `ListItem`.
      */
-    nestedItems: React.PropTypes.arrayOf(React.PropTypes.element),
-
+    nestedItems: PropTypes.arrayOf(PropTypes.element),
     /**
      * Controls how deep a `ListItem` appears.
      * This property is automatically managed, so modify at your own risk.
      */
-    nestedLevel: React.PropTypes.number,
-
+    nestedLevel: PropTypes.number,
     /**
      * Override the inline-styles of the nested items' `NestedList`.
      */
-    nestedListStyle: React.PropTypes.object,
-
-/**
+    nestedListStyle: PropTypes.object,
+    /**
      * Callback function fired when the `ListItem` is focused or blurred by the keyboard.
      *
      * @param {object} event `focus` or `blur` event targeting the `ListItem`.
      * @param {boolean} isKeyboardFocused If true, the `ListItem` is focused.
      */
-    onKeyboardFocus: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse enters the `ListItem`.
-     *
-     * @param {object} event `mouseenter` event targeting the `ListItem`.
-     */
-    onMouseEnter: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse leaves the `ListItem`.
-     *
-     * @param {object} event `mouseleave` event targeting the `ListItem`.
-     */
-    onMouseLeave: React.PropTypes.func,
-
+    onKeyboardFocus: PropTypes.func,
+    /** @ignore */
+    onMouseEnter: PropTypes.func,
+    /** @ignore */
+    onMouseLeave: PropTypes.func,
     /**
      * Callbak function fired when the `ListItem` toggles its nested list.
      *
      * @param {object} listItem The `ListItem`.
      */
-    onNestedListToggle: React.PropTypes.func,
-
+    onNestedListToggle: PropTypes.func,
+    /** @ignore */
+    onTouchStart: PropTypes.func,
+    /** @ignore */
+    onTouchTap: PropTypes.func,
     /**
-     * Callback function fired when the `ListItem` is touched.
-     *
-     * @param {object} event `touchstart` event targeting the `ListItem`.
+     * Control toggle state of nested list.
      */
-    onTouchStart: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the `ListItem` is touch-tapped.
-     *
-     * @param {object} event TouchTap event targeting the `ListItem`.
-     */
-    onTouchTap: React.PropTypes.func,
-
+    open: PropTypes.bool,
     /**
      * This is the block element that contains the primary text.
      * If a string is passed in, a div tag will be rendered.
      */
-    primaryText: React.PropTypes.node,
-
+    primaryText: PropTypes.node,
     /**
      * If true, clicking or tapping the primary text of the `ListItem`
      * toggles the nested list.
      */
-    primaryTogglesNestedList: React.PropTypes.bool,
-
+    primaryTogglesNestedList: PropTypes.bool,
     /**
      * This is the `Avatar` element to be displayed on the right side.
      */
-    rightAvatar: React.PropTypes.element,
-
+    rightAvatar: PropTypes.element,
     /**
      * This is the `SvgIcon` or `FontIcon` to be displayed on the right side.
      */
-    rightIcon: React.PropTypes.element,
-
+    rightIcon: PropTypes.element,
     /**
      * This is the `IconButton` to be displayed on the right side.
      * Hovering over this button will remove the `ListItem` hover.
@@ -158,85 +252,77 @@ const ListItem = React.createClass({
      * ripple on the `ListItem`; the event will be stopped and prevented
      * from bubbling up to cause a `ListItem` click.
      */
-    rightIconButton: React.PropTypes.element,
-
+    rightIconButton: PropTypes.element,
     /**
      * This is the `Toggle` element to display on the right side.
      */
-    rightToggle: React.PropTypes.element,
-
+    rightToggle: PropTypes.element,
     /**
      * This is the block element that contains the secondary text.
      * If a string is passed in, a div tag will be rendered.
      */
-    secondaryText: React.PropTypes.node,
-
+    secondaryText: PropTypes.node,
     /**
      * Can be 1 or 2. This is the number of secondary
      * text lines before ellipsis will show.
      */
-    secondaryTextLines: React.PropTypes.oneOf([1, 2]),
-
+    secondaryTextLines: PropTypes.oneOf([1, 2]),
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-  },
+    style: PropTypes.object,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    autoGenerateNestedIndicator: true,
+    disableKeyboardFocus: false,
+    disabled: false,
+    initiallyOpen: false,
+    insetChildren: false,
+    nestedItems: [],
+    nestedLevel: 0,
+    onKeyboardFocus: () => {},
+    onMouseEnter: () => {},
+    onMouseLeave: () => {},
+    onNestedListToggle: () => {},
+    onTouchStart: () => {},
+    open: null,
+    primaryTogglesNestedList: false,
+    secondaryTextLines: 1,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  mixins: [
-    PureRenderMixin,
-  ],
+  state = {
+    hovered: false,
+    isKeyboardFocused: false,
+    open: false,
+    rightIconButtonHovered: false,
+    rightIconButtonKeyboardFocused: false,
+    touch: false,
+  };
 
-  getDefaultProps() {
-    return {
-      autoGenerateNestedIndicator: true,
-      disableKeyboardFocus: false,
-      disabled: false,
-      initiallyOpen: false,
-      insetChildren: false,
-      nestedItems: [],
-      nestedLevel: 0,
-      onKeyboardFocus: () => {},
-      onMouseEnter: () => {},
-      onMouseLeave: () => {},
-      onNestedListToggle: () => {},
-      onTouchStart: () => {},
-      primaryTogglesNestedList: false,
-      secondaryTextLines: 1,
-    };
-  },
-
-  getInitialState() {
-    return {
-      hovered: false,
-      isKeyboardFocused: false,
-      open: this.props.initiallyOpen,
-      rightIconButtonHovered: false,
-      rightIconButtonKeyboardFocused: false,
-      touch: false,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
+  componentWillMount() {
     this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
+      open: this.props.open === null ? this.props.initiallyOpen === true : this.props.open,
     });
-  },
+  }
+
+  componentWillReceiveProps(nextProps) {
+    // update the state when the component is controlled.
+    if (nextProps.open !== null)
+      this.setState({open: nextProps.open});
+  }
+
+  shouldComponentUpdate(nextProps, nextState, nextContext) {
+    return (
+      !shallowEqual(this.props, nextProps) ||
+      !shallowEqual(this.state, nextState) ||
+      !shallowEqual(this.context, nextContext)
+    );
+  }
 
   // This method is needed by the `MenuItem` component.
   applyFocusState(focusState) {
@@ -258,9 +344,9 @@ const ListItem = React.createClass({
           break;
       }
     }
-  },
+  }
 
-  _createDisabledElement(styles, contentChildren, additionalProps) {
+  createDisabledElement(styles, contentChildren, additionalProps) {
     const {
       innerDivStyle,
       style,
@@ -276,14 +362,14 @@ const ListItem = React.createClass({
     return (
       <div
         {...additionalProps}
-        style={this.state.muiTheme.prepareStyles(mergedDivStyles)}
+        style={this.context.muiTheme.prepareStyles(mergedDivStyles)}
       >
         {contentChildren}
       </div>
      );
-  },
+  }
 
-  _createLabelElement(styles, contentChildren, additionalProps) {
+  createLabelElement(styles, contentChildren, additionalProps) {
     const {
       innerDivStyle,
       style,
@@ -300,94 +386,100 @@ const ListItem = React.createClass({
     return (
       <label
         {...additionalProps}
-        style={this.state.muiTheme.prepareStyles(mergedLabelStyles)}
+        style={this.context.muiTheme.prepareStyles(mergedLabelStyles)}
       >
         {contentChildren}
       </label>
      );
-  },
+  }
 
-  _createTextElement(styles, data, key) {
-    const isAnElement = React.isValidElement(data);
-    const mergedStyles = isAnElement ?
-      Object.assign({}, styles, data.props.style) : null;
-
-    return isAnElement ? (
-      React.cloneElement(data, {
+  createTextElement(styles, data, key) {
+    const {prepareStyles} = this.context.muiTheme;
+    if (React.isValidElement(data)) {
+      let style = Object.assign({}, styles, data.props.style);
+      if (typeof data.type === 'string') { // if element is a native dom node
+        style = prepareStyles(style);
+      }
+      return React.cloneElement(data, {
         key: key,
-        style: this.state.muiTheme.prepareStyles(mergedStyles),
-      })
-    ) : (
-      <div key={key} style={this.state.muiTheme.prepareStyles(styles)}>
+        style: style,
+      });
+    }
+
+    return (
+      <div key={key} style={prepareStyles(styles)}>
         {data}
       </div>
     );
-  },
+  }
 
-  handleKeyboardFocus(event, isKeyboardFocused) {
+  handleKeyboardFocus = (event, isKeyboardFocused) => {
     this.setState({isKeyboardFocused: isKeyboardFocused});
     this.props.onKeyboardFocus(event, isKeyboardFocused);
-  },
+  };
 
-  handleMouseEnter(event) {
+  handleMouseEnter = (event) => {
     if (!this.state.touch) this.setState({hovered: true});
     this.props.onMouseEnter(event);
-  },
+  };
 
-  handleMouseLeave(event) {
+  handleMouseLeave = (event) => {
     this.setState({hovered: false});
     this.props.onMouseLeave(event);
-  },
+  };
 
-  handleNestedListToggle(event) {
+  handleNestedListToggle = (event) => {
     event.stopPropagation();
-    this.setState({open: !this.state.open});
-    this.props.onNestedListToggle(this);
-  },
+    this.setState({open: !this.state.open}, () => {
+      this.props.onNestedListToggle(this);
+    });
+  };
 
-  handleRightIconButtonKeyboardFocus(event, isKeyboardFocused) {
+  handleRightIconButtonKeyboardFocus = (event, isKeyboardFocused) => {
+    if (isKeyboardFocused) {
+      this.setState({
+        isKeyboardFocused: false,
+        rightIconButtonKeyboardFocused: isKeyboardFocused,
+      });
+    }
+
     const iconButton = this.props.rightIconButton;
-    const newState = {};
-
-    newState.rightIconButtonKeyboardFocused = isKeyboardFocused;
-    if (isKeyboardFocused) newState.isKeyboardFocused = false;
-    this.setState(newState);
 
     if (iconButton && iconButton.props.onKeyboardFocus) iconButton.props.onKeyboardFocus(event, isKeyboardFocused);
-  },
+  };
 
-  handleRightIconButtonMouseLeave(event) {
+  handleRightIconButtonMouseLeave = (event) => {
     const iconButton = this.props.rightIconButton;
     this.setState({rightIconButtonHovered: false});
     if (iconButton && iconButton.props.onMouseLeave) iconButton.props.onMouseLeave(event);
-  },
+  };
 
-  handleRightIconButtonMouseEnter(event) {
+  handleRightIconButtonMouseEnter = (event) => {
     const iconButton = this.props.rightIconButton;
     this.setState({rightIconButtonHovered: true});
     if (iconButton && iconButton.props.onMouseEnter) iconButton.props.onMouseEnter(event);
-  },
+  };
 
-  handleRightIconButtonMouseUp(event) {
+  handleRightIconButtonMouseUp = (event) => {
     const iconButton = this.props.rightIconButton;
     event.stopPropagation();
     if (iconButton && iconButton.props.onMouseUp) iconButton.props.onMouseUp(event);
-  },
+  };
 
-  handleRightIconButtonTouchTap(event) {
+  handleRightIconButtonTouchTap = (event) => {
     const iconButton = this.props.rightIconButton;
 
-    //Stop the event from bubbling up to the list-item
+    // Stop the event from bubbling up to the list-item
     event.stopPropagation();
     if (iconButton && iconButton.props.onTouchTap) iconButton.props.onTouchTap(event);
-  },
+  };
 
-  handleTouchStart(event) {
+  handleTouchStart = (event) => {
     this.setState({touch: true});
     this.props.onTouchStart(event);
-  },
+  };
 
-  _pushElement(children, element, baseStyles, additionalProps) {
+  pushElement(children, element, baseStyles, additionalProps) {
     if (element) {
       const styles = Object.assign({}, baseStyles, element.props.style);
       children.push(
@@ -398,7 +490,7 @@ const ListItem = React.createClass({
         })
       );
     }
-  },
+  }
 
   render() {
     const {
@@ -406,18 +498,20 @@ const ListItem = React.createClass({
       children,
       disabled,
       disableKeyboardFocus,
+      initiallyOpen, // eslint-disable-line no-unused-vars
       innerDivStyle,
-      insetChildren,
+      insetChildren, // eslint-disable-line no-unused-vars
       leftAvatar,
       leftCheckbox,
       leftIcon,
       nestedItems,
       nestedLevel,
       nestedListStyle,
-      onKeyboardFocus,
-      onMouseLeave,
-      onMouseEnter,
-      onTouchStart,
+      onKeyboardFocus, // eslint-disable-line no-unused-vars
+      onMouseEnter, // eslint-disable-line no-unused-vars
+      onMouseLeave, // eslint-disable-line no-unused-vars
+      onNestedListToggle, // eslint-disable-line no-unused-vars
+      onTouchStart, // eslint-disable-line no-unused-vars
       onTouchTap,
       rightAvatar,
       rightIcon,
@@ -426,148 +520,41 @@ const ListItem = React.createClass({
       primaryText,
       primaryTogglesNestedList,
       secondaryText,
-      secondaryTextLines,
+      secondaryTextLines, // eslint-disable-line no-unused-vars
       style,
       ...other,
     } = this.props;
 
-    const {
-      listItem,
-    } = this.state.muiTheme;
-
-    const textColor = this.state.muiTheme.rawTheme.palette.textColor;
-    const hoverColor = ColorManipulator.fade(textColor, 0.1);
-    const singleAvatar = !secondaryText && (leftAvatar || rightAvatar);
-    const singleNoAvatar = !secondaryText && !(leftAvatar || rightAvatar);
-    const twoLine = secondaryText && secondaryTextLines === 1;
-    const threeLine = secondaryText && secondaryTextLines > 1;
-    const hasCheckbox = leftCheckbox || rightToggle;
-
-    const styles = {
-      root: {
-        backgroundColor: (this.state.isKeyboardFocused || this.state.hovered) &&
-          !this.state.rightIconButtonHovered &&
-          !this.state.rightIconButtonKeyboardFocused ? hoverColor : null,
-        color: textColor,
-        display: 'block',
-        fontSize: 16,
-        lineHeight: '16px',
-        position: 'relative',
-        transition: transitions.easeOut(),
-      },
-
-      //This inner div is needed so that ripples will span the entire container
-      innerDiv: {
-        marginLeft: nestedLevel * this.state.muiTheme.listItem.nestedLevelDepth,
-        paddingLeft: leftIcon || leftAvatar || leftCheckbox || insetChildren ? 72 : 16,
-        paddingRight: rightIcon || rightAvatar || rightIconButton ? 56 : rightToggle ? 72 : 16,
-        paddingBottom: singleAvatar ? 20 : 16,
-        paddingTop: singleNoAvatar || threeLine ? 16 : 20,
-        position: 'relative',
-      },
-
-      icons: {
-        height: 24,
-        width: 24,
-        display: 'block',
-        position: 'absolute',
-        top: twoLine ? 12 : singleAvatar ? 4 : 0,
-        margin: 12,
-      },
-
-      leftIcon: {
-        color: listItem.leftIconColor,
-        fill: listItem.leftIconColor,
-        left: 4,
-      },
-
-      rightIcon: {
-        color: listItem.rightIconColor,
-        fill: listItem.rightIconColor,
-        right: 4,
-      },
-
-      avatars: {
-        position: 'absolute',
-        top: singleAvatar ? 8 : 16,
-      },
-
-      label: {
-        cursor: 'pointer',
-      },
-
-      leftAvatar: {
-        left: 16,
-      },
-
-      rightAvatar: {
-        right: 16,
-      },
-
-      leftCheckbox: {
-        position: 'absolute',
-        display: 'block',
-        width: 24,
-        top: twoLine ? 24 : singleAvatar ? 16 : 12,
-        left: 16,
-      },
-
-      primaryText: {
-      },
-
-      rightIconButton: {
-        position: 'absolute',
-        display: 'block',
-        top: twoLine ? 12 : singleAvatar ? 4 : 0,
-        right: 4,
-      },
-
-      rightToggle: {
-        position: 'absolute',
-        display: 'block',
-        width: 54,
-        top: twoLine ? 25 : singleAvatar ? 17 : 13,
-        right: 8,
-      },
-
-      secondaryText: {
-        fontSize: 14,
-        lineHeight: threeLine ? '18px' : '16px',
-        height: threeLine ? 36 : 16,
-        margin: 0,
-        marginTop: 4,
-        color: listItem.secondaryTextColor,
-
-        //needed for 2 and 3 line ellipsis
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: threeLine ? null : 'nowrap',
-        display: threeLine ? '-webkit-box' : null,
-        WebkitLineClamp: threeLine ? 2 : null,
-        WebkitBoxOrient: threeLine ? 'vertical' : null,
-      },
-    };
-
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context, this.state);
     const contentChildren = [children];
 
     if (leftIcon) {
-      this._pushElement(
+      const additionalProps = {
+        color: leftIcon.props.color || this.context.muiTheme.listItem.leftIconColor,
+      };
+      this.pushElement(
         contentChildren,
         leftIcon,
-        Object.assign({}, styles.icons, styles.leftIcon)
+        Object.assign({}, styles.icons, styles.leftIcon),
+        additionalProps
       );
     }
 
     if (rightIcon) {
-      this._pushElement(
+      const additionalProps = {
+        color: rightIcon.props.color || this.context.muiTheme.listItem.rightIconColor,
+      };
+      this.pushElement(
         contentChildren,
         rightIcon,
-        Object.assign({}, styles.icons, styles.rightIcon)
+        Object.assign({}, styles.icons, styles.rightIcon),
+        additionalProps
       );
     }
 
     if (leftAvatar) {
-      this._pushElement(
+      this.pushElement(
         contentChildren,
         leftAvatar,
         Object.assign({}, styles.avatars, styles.leftAvatar)
@@ -575,7 +562,7 @@ const ListItem = React.createClass({
     }
 
     if (rightAvatar) {
-      this._pushElement(
+      this.pushElement(
         contentChildren,
         rightAvatar,
         Object.assign({}, styles.avatars, styles.rightAvatar)
@@ -583,14 +570,14 @@ const ListItem = React.createClass({
     }
 
     if (leftCheckbox) {
-      this._pushElement(
+      this.pushElement(
         contentChildren,
         leftCheckbox,
         Object.assign({}, styles.leftCheckbox)
       );
     }
 
-    //RightIconButtonElement
+    // RightIconButtonElement
     const hasNestListItems = nestedItems.length;
     const hasRightElement = rightAvatar || rightIcon || rightIconButton || rightToggle;
     const needsNestedIndicator = hasNestListItems && autoGenerateNestedIndicator && !hasRightElement;
@@ -614,7 +601,7 @@ const ListItem = React.createClass({
         rightIconButtonHandlers.onTouchTap = this.handleNestedListToggle;
       }
 
-      this._pushElement(
+      this.pushElement(
         contentChildren,
         rightIconButtonElement,
         Object.assign({}, styles.rightIconButton),
@@ -623,7 +610,7 @@ const ListItem = React.createClass({
     }
 
     if (rightToggle) {
-      this._pushElement(
+      this.pushElement(
         contentChildren,
         rightToggle,
         Object.assign({}, styles.rightToggle)
@@ -631,7 +618,7 @@ const ListItem = React.createClass({
     }
 
     if (primaryText) {
-      const primaryTextElement = this._createTextElement(
+      const primaryTextElement = this.createTextElement(
         styles.primaryText,
         primaryText,
         'primaryText'
@@ -640,7 +627,7 @@ const ListItem = React.createClass({
     }
 
     if (secondaryText) {
-      const secondaryTextElement = this._createTextElement(
+      const secondaryTextElement = this.createTextElement(
         styles.secondaryText,
         secondaryText,
         'secondaryText'
@@ -649,21 +636,23 @@ const ListItem = React.createClass({
     }
 
     const nestedList = nestedItems.length ? (
-      <NestedList nestedLevel={nestedLevel + 1} open={this.state.open} style={nestedListStyle}>
+      <NestedList nestedLevel={nestedLevel} open={this.state.open} style={nestedListStyle}>
         {nestedItems}
       </NestedList>
     ) : undefined;
 
+    const simpleLabel = !primaryTogglesNestedList && (leftCheckbox || rightToggle);
+
     return (
       <div>
         {
-          hasCheckbox ? this._createLabelElement(styles, contentChildren, other) :
-          disabled ? this._createDisabledElement(styles, contentChildren, other) : (
+          simpleLabel ? this.createLabelElement(styles, contentChildren, other) :
+          disabled ? this.createDisabledElement(styles, contentChildren, other) : (
             <EnhancedButton
+              containerElement={'span'}
               {...other}
               disabled={disabled}
               disableKeyboardFocus={disableKeyboardFocus || this.state.rightIconButtonKeyboardFocused}
-              linkButton={true}
               onKeyboardFocus={this.handleKeyboardFocus}
               onMouseLeave={this.handleMouseLeave}
               onMouseEnter={this.handleMouseEnter}
@@ -672,7 +661,7 @@ const ListItem = React.createClass({
               ref="enhancedButton"
               style={Object.assign({}, styles.root, style)}
             >
-              <div style={this.state.muiTheme.prepareStyles(Object.assign(styles.innerDiv, innerDivStyle))}>
+              <div style={prepareStyles(Object.assign(styles.innerDiv, innerDivStyle))}>
                 {contentChildren}
               </div>
             </EnhancedButton>
@@ -681,8 +670,7 @@ const ListItem = React.createClass({
         {nestedList}
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default ListItem;

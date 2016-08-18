@@ -1,16 +1,21 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import Title from 'react-title-component';
-import styleResizable from 'material-ui/utils/styleResizable';
+import withWidth, {MEDIUM, LARGE} from 'material-ui/utils/withWidth';
 import ClearFix from 'material-ui/internal/ClearFix';
-import colorManipulator from 'material-ui/utils/colorManipulator';
+import {getContrastRatio} from 'material-ui/utils/colorManipulator';
 import typography from 'material-ui/styles/typography';
 import * as colors from 'material-ui/styles/colors';
 
-const ColorsPage = React.createClass({
+const mainColors = [
+  'Red', 'Pink', 'Purple', 'Deep Purple', 'Indigo', 'Blue', 'Light Blue',
+  'Cyan', 'Teal', 'Green', 'Light Green', 'Lime', 'Yellow', 'Amber', 'Orange',
+  'Deep Orange',
+];
 
-  mixins: [
-    styleResizable,
-  ],
+class ColorsPage extends Component {
+  static propTypes = {
+    width: PropTypes.number.isRequired,
+  };
 
   getStyles() {
     const styles = {
@@ -39,7 +44,7 @@ const ColorsPage = React.createClass({
         lineHeight: '32px',
         paddingTop: 16,
         marginBottom: 12,
-        letterSpacing: '0',
+        letterSpacing: 0,
         fontWeight: typography.fontWeightNormal,
         color: typography.textDarkBlack,
       },
@@ -54,18 +59,18 @@ const ColorsPage = React.createClass({
       },
     };
 
-    if (this.isDeviceSize(styleResizable.statics.Sizes.LARGE)) {
+    if (this.props.width === LARGE) {
       styles.colorGroup = Object.assign(styles.colorGroup, styles.colorGroupWhenLarge);
-    } else if (this.isDeviceSize(styleResizable.statics.Sizes.MEDIUM)) {
+    } else if (this.props.width === MEDIUM) {
       styles.colorGroup = Object.assign(styles.colorGroup, styles.colorGroupWhenMedium);
     } else {
       styles.colorGroup = Object.assign(styles.colorGroup, styles.colorGroupWhenSmall);
     }
 
     return styles;
-  },
+  }
 
-  _getColorGroup(styles, color, showAltPalette) {
+  getColorGroup(styles, color, showAltPalette) {
     const mainPalette = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
     const altPalette = ['A100', 'A200', 'A400', 'A700'];
     const cssColor = color.replace(' ', '').replace(color.charAt(0), color.charAt(0).toLowerCase());
@@ -73,28 +78,28 @@ const ColorsPage = React.createClass({
     const colorGroupStyle = styles.colorGroup;
 
     mainPalette.forEach((mainValue) => {
-      colors.push(this._getColorBlock(styles, cssColor, mainValue));
+      colors.push(this.getColorBlock(styles, cssColor, mainValue));
     }, this);
 
     if (showAltPalette) {
       altPalette.forEach((altValue) => {
-        colors.push(this._getColorBlock(styles, cssColor, altValue));
+        colors.push(this.getColorBlock(styles, cssColor, altValue));
       }, this);
     }
 
     return (
       <ul style={colorGroupStyle}>
-        {React.Children.toArray(this._getColorBlock(styles, cssColor, 500, color))}
+        {React.Children.toArray(this.getColorBlock(styles, cssColor, 500, color))}
         {React.Children.toArray(colors)}
       </ul>
     );
-  },
+  }
 
-  _getColorBlock(styles, colorName, colorValue, colorTitle) {
+  getColorBlock(styles, colorName, colorValue, colorTitle) {
     const bgColorText = colorName + colorValue;
     const bgColor = colors[bgColorText];
     let fgColor = colors.fullBlack;
-    const contrastRatio = colorManipulator.contrastRatio(bgColor, fgColor);
+    const contrastRatio = getContrastRatio(bgColor, fgColor);
     let blockTitle;
 
     if (contrastRatio < 7) fgColor = colors.fullWhite;
@@ -116,41 +121,34 @@ const ColorsPage = React.createClass({
     return (
       <li style={rowStyle}>
         {blockTitle}
-        {this._getColorName(styles, bgColorText, bgColor)}
+        {this.getColorName(styles, bgColorText, bgColor)}
       </li>
     );
-  },
+  }
 
-  _getColorName(styles, text, colorValue) {
+  getColorName(styles, text, colorValue) {
     return (
       <div style={styles.colorContainer}>
         <span>{text}</span>
         <span style={styles.colorValue}>{colorValue.toUpperCase()}</span>
       </div>
     );
-  },
+  }
 
   render() {
     const styles = this.getStyles();
 
-    const mainColors = [
-      'Red', 'Pink', 'Purple', 'Deep Purple', 'Indigo', 'Blue', 'Light Blue',
-      'Cyan', 'Teal', 'Green', 'Light Green', 'Lime', 'Yellow', 'Amber', 'Orange', 'Deep Orange',
-    ];
     const neutralColors = ['Brown', 'Blue Grey', 'Grey'];
     const colorGroups = [];
     const neutralGroups = [];
 
     mainColors.forEach((color) => {
-      colorGroups.push(this._getColorGroup(styles, color, true));
+      colorGroups.push(this.getColorGroup(styles, color, true));
     }, this);
 
     neutralColors.forEach((color) => {
-      neutralGroups.push(this._getColorGroup(styles, color, false));
+      neutralGroups.push(this.getColorGroup(styles, color, false));
     }, this);
-
-    const googleLink = 'https://www.google.com/design/spec/style/color.html#color-ui-color-palette';
-    const githubLink = 'https://github.com/callemall/material-ui/blob/master/src/styles/colors.js';
 
     return (
       <div>
@@ -158,21 +156,22 @@ const ColorsPage = React.createClass({
         <h2 style={styles.headline}>UI Color Palette</h2>
         <p>
           We&#39;ve created javascript variables for every color used in
-          the <a href={googleLink}>UI Color Palette</a>. They are stored
-          in <a href={githubLink}>styles/colors.js</a>.
+          the <a href="https://www.google.com/design/spec/style/color.html#color-ui-color-palette">
+          UI Color Palette
+          </a>. They are stored
+          in <a href="https://github.com/callemall/material-ui/blob/master/src/styles/colors.js">
+          styles/colors.js
+          </a>.
         </p>
-
         <ClearFix>
           {React.Children.toArray(colorGroups)}
-
           <div>
             {React.Children.toArray(neutralGroups)}
           </div>
         </ClearFix>
       </div>
     );
-  },
+  }
+}
 
-});
-
-export default ColorsPage;
+export default withWidth()(ColorsPage);

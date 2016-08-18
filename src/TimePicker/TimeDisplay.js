@@ -1,51 +1,30 @@
-import React from 'react';
-import getMuiTheme from '../styles/getMuiTheme';
+import React, {Component, PropTypes} from 'react';
 
-const TimeDisplay = React.createClass({
+class TimeDisplay extends Component {
+  static propTypes = {
+    affix: PropTypes.oneOf(['', 'pm', 'am']),
+    format: PropTypes.oneOf(['ampm', '24hr']),
+    mode: PropTypes.oneOf(['hour', 'minute']),
+    onSelectAffix: PropTypes.func,
+    onSelectHour: PropTypes.func,
+    onSelectMin: PropTypes.func,
+    selectedTime: PropTypes.object.isRequired,
+  };
 
-  propTypes: {
-    affix: React.PropTypes.oneOf(['', 'pm', 'am']),
-    format: React.PropTypes.oneOf(['ampm', '24hr']),
-    mode: React.PropTypes.oneOf(['hour', 'minute']),
-    onSelectAffix: React.PropTypes.func,
-    onSelectHour: React.PropTypes.func,
-    onSelectMin: React.PropTypes.func,
-    selectedTime: React.PropTypes.object.isRequired,
-  },
+  static defaultProps = {
+    affix: '',
+    mode: 'hour',
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  state = {
+    transitionDirection: 'up',
+  };
 
-  getDefaultProps() {
-    return {
-      mode: 'hour',
-      affix: '',
-    };
-  },
-
-  getInitialState() {
-    return {
-      transitionDirection: 'up',
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-
+  componentWillReceiveProps(nextProps) {
     if (nextProps.selectedTime !== this.props.selectedTime) {
       const direction = nextProps.selectedTime > this.props.selectedTime ? 'up' : 'down';
 
@@ -53,7 +32,7 @@ const TimeDisplay = React.createClass({
         transitionDirection: direction,
       });
     }
-  },
+  }
 
   sanitizeTime() {
     let hour = this.props.selectedTime.getHours();
@@ -69,24 +48,21 @@ const TimeDisplay = React.createClass({
     if (min.length < 2 ) min = `0${min}`;
 
     return [hour, min];
-  },
-
-  getTheme() {
-    return this.state.muiTheme.timePicker;
-  },
+  }
 
   render() {
     const {
-      selectedTime,
-      mode,
       affix,
+      format,
+      mode,
+      onSelectAffix,
+      onSelectHour,
+      onSelectMin,
+      selectedTime, // eslint-disable-line no-unused-vars
       ...other,
     } = this.props;
 
-    const {
-      prepareStyles,
-      timePicker,
-    } = this.state.muiTheme;
+    const {prepareStyles, timePicker} = this.context.muiTheme;
 
     const styles = {
       root: {
@@ -96,7 +72,6 @@ const TimeDisplay = React.createClass({
         backgroundColor: timePicker.headerColor,
         color: 'white',
       },
-
       text: {
         margin: '6px 0',
         lineHeight: '58px',
@@ -106,11 +81,9 @@ const TimeDisplay = React.createClass({
         justifyContent: 'center',
         alignItems: 'baseline',
       },
-
       time: {
         margin: '0 10px',
       },
-
       affix: {
         flex: 1,
         position: 'relative',
@@ -118,17 +91,14 @@ const TimeDisplay = React.createClass({
         height: 17,
         fontSize: 17,
       },
-
       affixTop: {
         position: 'absolute',
         top: -20,
         left: 0,
       },
-
       clickable: {
         cursor: 'pointer',
       },
-
       inactive: {
         opacity: 0.7,
       },
@@ -137,22 +107,22 @@ const TimeDisplay = React.createClass({
     const [hour, min] = this.sanitizeTime();
 
     let buttons = [];
-    if (this.props.format === 'ampm') {
+    if (format === 'ampm') {
       buttons = [
         <div
           key="pm"
           style={prepareStyles(Object.assign({}, styles.clickable, affix === 'pm' ? {} : styles.inactive))}
-          onTouchTap={() => this.props.onSelectAffix('pm')}
+          onTouchTap={() => onSelectAffix('pm')}
         >
-          {"PM"}
+          {'PM'}
         </div>,
         <div
           key="am"
           style={prepareStyles(Object.assign({},
             styles.affixTop, styles.clickable, affix === 'am' ? {} : styles.inactive))}
-          onTouchTap={() => this.props.onSelectAffix('am')}
+          onTouchTap={() => onSelectAffix('am')}
         >
-          {"AM"}
+          {'AM'}
         </div>,
       ];
     }
@@ -164,7 +134,7 @@ const TimeDisplay = React.createClass({
           <div style={prepareStyles(styles.time)}>
             <span
               style={prepareStyles(Object.assign({}, styles.clickable, mode === 'hour' ? {} : styles.inactive))}
-              onTouchTap={this.props.onSelectHour}
+              onTouchTap={onSelectHour}
             >
               {hour}
             </span>
@@ -172,7 +142,7 @@ const TimeDisplay = React.createClass({
             <span
               style={prepareStyles(Object.assign({},
                 styles.clickable, mode === 'minute' ? {} : styles.inactive))}
-              onTouchTap={this.props.onSelectMin}
+              onTouchTap={onSelectMin}
             >
               {min}
             </span>
@@ -183,8 +153,7 @@ const TimeDisplay = React.createClass({
         </div>
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default TimeDisplay;

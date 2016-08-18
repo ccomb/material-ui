@@ -1,10 +1,7 @@
-import React from 'react';
-import getMuiTheme from '../styles/getMuiTheme';
+import React, {Component, PropTypes} from 'react';
 
-function getStyles(props, state) {
-  const {
-    cardText,
-  } = state.muiTheme;
+function getStyles(props, context) {
+  const {cardText} = context.muiTheme;
 
   return {
     root: {
@@ -15,75 +12,56 @@ function getStyles(props, state) {
   };
 }
 
-const CardText = React.createClass({
+class CardText extends Component {
+  static muiName = 'CardText';
 
-  propTypes: {
+  static propTypes = {
     /**
      * If true, a click on this card component expands the card.
      */
-    actAsExpander: React.PropTypes.bool,
-
+    actAsExpander: PropTypes.bool,
     /**
      * Can be used to render elements inside the Card Text.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * Override the CardText color.
      */
-    color: React.PropTypes.string,
-
+    color: PropTypes.string,
     /**
      * If true, this card component is expandable.
      */
-    expandable: React.PropTypes.bool,
-
+    expandable: PropTypes.bool,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-  },
+    style: PropTypes.object,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
   render() {
     const {
-      prepareStyles,
-    } = this.state.muiTheme;
+      actAsExpander, // eslint-disable-line no-unused-vars
+      children,
+      color, // eslint-disable-line no-unused-vars
+      expandable, // eslint-disable-line no-unused-vars
+      style,
+      ...other,
+    } = this.props;
 
-    const styles = getStyles(this.props, this.state);
-    const rootStyle = Object.assign(styles.root, this.props.style);
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context);
+    const rootStyle = Object.assign(styles.root, style);
 
     return (
-      <div {...this.props} style={prepareStyles(rootStyle)}>
-        {this.props.children}
+      <div {...other} style={prepareStyles(rootStyle)}>
+        {children}
       </div>
     );
-  },
-});
+  }
+}
 
 export default CardText;

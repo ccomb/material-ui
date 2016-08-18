@@ -12,14 +12,11 @@ import SliderExampleDisabled from './ExampleDisabled';
 import sliderExampleDisabledCode from '!raw!./ExampleDisabled';
 import SliderExampleStep from './ExampleStep';
 import sliderExampleStepCode from '!raw!./ExampleStep';
-import sliderCode from '!raw!material-ui/lib/Slider/Slider';
-
-const descriptions = {
-  simple: 'The `defaultValue` property sets the initial position of the slider. The slider appearance changes when ' +
-  'not at the starting position.',
-  stepped: 'By default, the slider is continuous. The `step` property causes the slider to move in discrete ' +
-  'increments.',
-};
+import SliderExampleControlled from './ExampleControlled';
+import sliderExampleControlledCode from '!raw!./ExampleControlled';
+import SliderExampleAxis from './ExampleAxis';
+import sliderExampleAxisCode from '!raw!./ExampleAxis';
+import sliderCode from '!raw!material-ui/Slider/Slider';
 
 const SliderPage = () => (
   <div>
@@ -27,7 +24,6 @@ const SliderPage = () => (
     <MarkdownElement text={sliderReadmeText} />
     <CodeExample
       title="Simple examples"
-      description={descriptions.simple}
       code={sliderExampleSimpleCode}
     >
       <SliderExampleSimple />
@@ -40,11 +36,24 @@ const SliderPage = () => (
     </CodeExample>
     <CodeExample
       title="Stepped example"
-      description={descriptions.stepped}
       code={sliderExampleStepCode}
     >
       <SliderExampleStep />
     </CodeExample>
+    <CodeExample
+      title="Controlled Examples"
+      code={sliderExampleControlledCode}
+    >
+      <SliderExampleControlled />
+    </CodeExample>
+
+    <CodeExample
+      title="Alternative Axis Examples"
+      code={sliderExampleAxisCode}
+    >
+      <SliderExampleAxis />
+    </CodeExample>
+
     <PropTypeDescription code={sliderCode} />
   </div>
 );

@@ -1,16 +1,11 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import EnhancedSwitch from '../internal/EnhancedSwitch';
 import transitions from '../styles/transitions';
 import CheckboxOutline from '../svg-icons/toggle/check-box-outline-blank';
 import CheckboxChecked from '../svg-icons/toggle/check-box';
-import getMuiTheme from '../styles/getMuiTheme';
-import deprecated from '../utils/deprecatedPropType';
 
-function getStyles(props, state) {
-  const {
-    checkbox,
-  } = state.muiTheme;
-
+function getStyles(props, context) {
+  const {checkbox} = context.muiTheme;
   const checkboxSize = 24;
 
   return {
@@ -47,9 +42,11 @@ function getStyles(props, state) {
     },
     checkWhenDisabled: {
       fill: checkbox.disabledColor,
+      cursor: 'not-allowed',
     },
     boxWhenDisabled: {
       fill: props.checked ? 'transparent' : checkbox.disabledColor,
+      cursor: 'not-allowed',
     },
     label: {
       color: props.disabled ? checkbox.labelDisabledColor : checkbox.labelColor,
@@ -57,150 +54,126 @@ function getStyles(props, state) {
   };
 }
 
-const Checkbox = React.createClass({
-
-  propTypes: {
+class Checkbox extends Component {
+  static propTypes = {
     /**
      * Checkbox is checked if true.
      */
-    checked: React.PropTypes.bool,
-
+    checked: PropTypes.bool,
     /**
      * The SvgIcon to use for the checked state.
      * This is useful to create icon toggles.
      */
-    checkedIcon: React.PropTypes.element,
-
+    checkedIcon: PropTypes.element,
     /**
      * The default state of our checkbox component.
+     * **Warning:** This cannot be used in conjunction with `checked`.
+     * Decide between using a controlled or uncontrolled input element and remove one of these props.
+     * More info: https://fb.me/react-controlled-components
      */
-    defaultChecked: React.PropTypes.bool,
-
+    defaultChecked: PropTypes.bool,
     /**
      * Disabled if true.
      */
-    disabled: React.PropTypes.bool,
-
+    disabled: PropTypes.bool,
     /**
      * Overrides the inline-styles of the icon element.
      */
-    iconStyle: React.PropTypes.object,
-
+    iconStyle: PropTypes.object,
     /**
      * Overrides the inline-styles of the input element.
      */
-    inputStyle: React.PropTypes.object,
-
+    inputStyle: PropTypes.object,
     /**
      * Where the label will be placed next to the checkbox.
      */
-    labelPosition: React.PropTypes.oneOf(['left', 'right']),
-
+    labelPosition: PropTypes.oneOf(['left', 'right']),
     /**
      * Overrides the inline-styles of the Checkbox element label.
      */
-    labelStyle: React.PropTypes.object,
-
+    labelStyle: PropTypes.object,
     /**
      * Callback function that is fired when the checkbox is checked.
      *
      * @param {object} event `change` event targeting the underlying checkbox `input`.
      * @param {boolean} isInputChecked The `checked` value of the underlying checkbox `input`.
      */
-    onCheck: React.PropTypes.func,
-
+    onCheck: PropTypes.func,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
      * The SvgIcon to use for the unchecked state.
      * This is useful to create icon toggles.
      */
-    unCheckedIcon: deprecated(React.PropTypes.element,
-      'Use uncheckedIcon instead.'),
-
-    /**
-     * The SvgIcon to use for the unchecked state.
-     * This is useful to create icon toggles.
-     */
-    uncheckedIcon: React.PropTypes.element,
-
+    uncheckedIcon: PropTypes.element,
     /**
      * ValueLink for when using controlled checkbox.
      */
-    valueLink: React.PropTypes.object,
-  },
+    valueLink: PropTypes.object,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    labelPosition: 'right',
+    disabled: false,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      defaultChecked: false,
-      labelPosition: 'right',
-      disabled: false,
-    };
-  },
+  state = {
+    switched: false,
+  };
 
-  getInitialState() {
-    return {
-      switched:
-        this.props.checked ||
-        this.props.defaultChecked ||
-        (this.props.valueLink && this.props.valueLink.value) ||
-        false,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
+  componentWillMount() {
+    const {checked, defaultChecked, valueLink} = this.props;
 
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+    if (checked || defaultChecked || (valueLink && valueLink.value)) {
+      this.setState({
+        switched: true,
+      });
+    }
+  }
 
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-      switched: this.props.checked !== nextProps.checked ?
-        nextProps.checked :
-        this.state.switched,
-    });
-  },
+  componentWillReceiveProps(nextProps) {
+    if (this.props.checked !== nextProps.checked) {
+      this.setState({
+        switched: nextProps.checked,
+      });
+    }
+  }
 
   isChecked() {
     return this.refs.enhancedSwitch.isSwitched();
-  },
+  }
 
   setChecked(newCheckedValue) {
     this.refs.enhancedSwitch.setSwitched(newCheckedValue);
-  },
+  }
 
-  _handleCheck(event, isInputChecked) {
-    if (this.props.onCheck) this.props.onCheck(event, isInputChecked);
-  },
+  handleStateChange = (newSwitched) => {
+    this.setState({
+      switched: newSwitched,
+    });
+  };
 
-  _handleStateChange(newSwitched) {
-    this.setState({switched: newSwitched});
-  },
+  handleCheck = (event, isInputChecked) => {
+    if (this.props.onCheck) {
+      this.props.onCheck(event, isInputChecked);
+    }
+  };
 
   render() {
     const {
       iconStyle,
-      onCheck,
+      onCheck, // eslint-disable-line no-unused-vars
       checkedIcon,
       uncheckedIcon,
-      unCheckedIcon,
       ...other,
     } = this.props;
-    const styles = getStyles(this.props, this.state);
+    const styles = getStyles(this.props, this.context);
     const boxStyles =
       Object.assign(
         styles.box,
@@ -220,8 +193,8 @@ const Checkbox = React.createClass({
       style: checkStyles,
     });
 
-    const unCheckedElement = (unCheckedIcon || uncheckedIcon) ? React.cloneElement((unCheckedIcon || uncheckedIcon), {
-      style: Object.assign(boxStyles, (unCheckedIcon || uncheckedIcon).props.style),
+    const unCheckedElement = uncheckedIcon ? React.cloneElement(uncheckedIcon, {
+      style: Object.assign(boxStyles, uncheckedIcon.props.style),
     }) : React.createElement(CheckboxOutline, {
       style: boxStyles,
     });
@@ -248,10 +221,9 @@ const Checkbox = React.createClass({
       switchElement: checkboxElement,
       rippleColor: rippleColor,
       iconStyle: mergedIconStyle,
-      onSwitch: this._handleCheck,
+      onSwitch: this.handleCheck,
       labelStyle: labelStyle,
-      onParentShouldUpdate: this._handleStateChange,
-      defaultSwitched: this.props.defaultChecked,
+      onParentShouldUpdate: this.handleStateChange,
       labelPosition: this.props.labelPosition,
     };
 
@@ -261,7 +233,7 @@ const Checkbox = React.createClass({
         {...enhancedSwitchProps}
       />
     );
-  },
-});
+  }
+}
 
 export default Checkbox;

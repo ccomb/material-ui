@@ -1,16 +1,13 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import transitions from '../styles/transitions';
 import propTypes from '../utils/propTypes';
 import EnhancedButton from '../internal/EnhancedButton';
 import FontIcon from '../FontIcon';
 import Tooltip from '../internal/Tooltip';
 import {extendChildren} from '../utils/childUtils';
-import getMuiTheme from '../styles/getMuiTheme';
 
-function getStyles(props, state) {
-  const {
-    baseTheme,
-  } = state.muiTheme;
+function getStyles(props, context) {
+  const {baseTheme} = context.muiTheme;
 
   return {
     root: {
@@ -26,10 +23,6 @@ function getStyles(props, state) {
     tooltip: {
       boxSizing: 'border-box',
     },
-    icon: {
-      color: baseTheme.palette.textColor,
-      fill: baseTheme.palette.textColor,
-    },
     overlay: {
       position: 'relative',
       top: 0,
@@ -40,216 +33,172 @@ function getStyles(props, state) {
     disabled: {
       color: baseTheme.palette.disabledColor,
       fill: baseTheme.palette.disabledColor,
+      cursor: 'not-allowed',
     },
   };
 }
 
-const IconButton = React.createClass({
+class IconButton extends Component {
+  static muiName = 'IconButton';
 
-  propTypes: {
+  static propTypes = {
     /**
      * Can be used to pass a `FontIcon` element as the icon for the button.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * The CSS class name of the root element.
      */
-    className: React.PropTypes.string,
-
+    className: PropTypes.string,
     /**
      * If true, the element's ripple effect will be disabled.
      */
-    disableTouchRipple: React.PropTypes.bool,
-
+    disableTouchRipple: PropTypes.bool,
     /**
      * If true, the element will be disabled.
      */
-    disabled: React.PropTypes.bool,
-
+    disabled: PropTypes.bool,
+    /**
+     * The URL to link to when the button is clicked.
+     */
+    href: PropTypes.string,
     /**
      * The CSS class name of the icon. Used for setting the icon with a stylesheet.
      */
-    iconClassName: React.PropTypes.string,
-
+    iconClassName: PropTypes.string,
     /**
      * Override the inline-styles of the icon element.
      */
-    iconStyle: React.PropTypes.object,
-
-    /**
-     * Callback function fired when the element loses focus.
-     * @param {object} event `blur` event targeting the element.
-     */
-    onBlur: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the element gains focus.
-     * @param {object} event `focus` event targeting the element.
-     */
-    onFocus: React.PropTypes.func,
-
+    iconStyle: PropTypes.object,
+    /** @ignore */
+    onBlur: PropTypes.func,
+    /** @ignore */
+    onFocus: PropTypes.func,
     /**
      * Callback function fired when the element is focused or blurred by the keyboard.
      *
      * @param {object} event `focus` or `blur` event targeting the element.
      * @param {boolean} keyboardFocused Indicates whether the element is focused.
      */
-    onKeyboardFocus: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse enters the element.
-     *
-     * @param {object} event `mouseenter` event targeting the element.
-     */
-    onMouseEnter: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse leaves the element.
-     *
-     * @param {object} event `mouseleave` event targeting the element.
-     */
-    onMouseLeave: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse leaves the element. Unlike `onMouseLeave`,
-     * this callback will fire on disabled icon buttons.
-     *
-     * @param {object} event `mouseout` event targeting the element.
-     */
-    onMouseOut: React.PropTypes.func,
-
+    onKeyboardFocus: PropTypes.func,
+    /** @ignore */
+    onMouseEnter: PropTypes.func,
+    /** @ignore */
+    onMouseLeave: PropTypes.func,
+    /** @ignore */
+    onMouseOut: PropTypes.func,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
      * The text to supply to the element's tooltip.
      */
-    tooltip: React.PropTypes.node,
-
+    tooltip: PropTypes.node,
     /**
      * The vertical and horizontal positions, respectively, of the element's tooltip.
      * Possible values are: "bottom-center", "top-center", "bottom-right", "top-right",
      * "bottom-left", and "top-left".
      */
     tooltipPosition: propTypes.cornersAndCenter,
-
     /**
      * Override the inline-styles of the tooltip element.
      */
-    tooltipStyles: React.PropTypes.object,
-
+    tooltipStyles: PropTypes.object,
     /**
      * If true, increase the tooltip element's size.  Useful for increasing tooltip
      * readability on mobile devices.
      */
-    touch: React.PropTypes.bool,
-  },
+    touch: PropTypes.bool,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    disabled: false,
+    disableTouchRipple: false,
+    iconStyle: {},
+    tooltipPosition: 'bottom-center',
+    touch: false,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      disabled: false,
-      disableTouchRipple: false,
-      iconStyle: {},
-      tooltipPosition: 'bottom-center',
-      touch: false,
-    };
-  },
-
-  getInitialState() {
-    return {
-      tooltipShown: false,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
+  state = {
+    tooltipShown: false,
+  };
 
   setKeyboardFocus() {
     this.refs.button.setKeyboardFocus();
-  },
+  }
 
-  _showTooltip() {
+  showTooltip() {
     if (this.props.tooltip) {
       this.setState({tooltipShown: true});
     }
-  },
+  }
 
-  _hideTooltip() {
+  hideTooltip() {
     if (this.props.tooltip) this.setState({tooltipShown: false});
-  },
+  }
 
-  handleBlur(event) {
-    this._hideTooltip();
+  handleBlur = (event) => {
+    this.hideTooltip();
     if (this.props.onBlur) this.props.onBlur(event);
-  },
+  };
 
-  handleFocus(event) {
-    this._showTooltip();
+  handleFocus = (event) => {
+    this.showTooltip();
     if (this.props.onFocus) this.props.onFocus(event);
-  },
+  };
 
-  handleMouseLeave(event) {
-    if (!this.refs.button.isKeyboardFocused()) this._hideTooltip();
+  handleMouseLeave = (event) => {
+    if (!this.refs.button.isKeyboardFocused()) this.hideTooltip();
     if (this.props.onMouseLeave) this.props.onMouseLeave(event);
-  },
+  };
 
-  handleMouseOut(event) {
-    if (this.props.disabled) this._hideTooltip();
+  handleMouseOut = (event) => {
+    if (this.props.disabled) this.hideTooltip();
     if (this.props.onMouseOut) this.props.onMouseOut(event);
-  },
+  };
 
-  _handleMouseEnter(event) {
-    this._showTooltip();
+  handleMouseEnter = (event) => {
+    this.showTooltip();
     if (this.props.onMouseEnter) this.props.onMouseEnter(event);
-  },
+  };
 
-  handleKeyboardFocus(event, keyboardFocused) {
+  handleKeyboardFocus = (event, keyboardFocused) => {
     if (keyboardFocused && !this.props.disabled) {
-      this._showTooltip();
+      this.showTooltip();
       if (this.props.onFocus) this.props.onFocus(event);
     } else if (!this.state.hovered) {
-      this._hideTooltip();
+      this.hideTooltip();
       if (this.props.onBlur) this.props.onBlur(event);
     }
 
-    if (this.props.onKeyboardFocus) this.props.onKeyboardFocus(event, keyboardFocused);
-  },
+    if (this.props.onKeyboardFocus) {
+      this.props.onKeyboardFocus(event, keyboardFocused);
+    }
+  };
 
   render() {
     const {
       disabled,
       disableTouchRipple,
+      children,
       iconClassName,
+      onKeyboardFocus, // eslint-disable-line no-unused-vars
       tooltip,
+      tooltipPosition: tooltipPositionProp,
+      tooltipStyles,
       touch,
       iconStyle,
       ...other,
     } = this.props;
     let fonticon;
 
-    const styles = getStyles(this.props, this.state);
-    const tooltipPosition = this.props.tooltipPosition.split('-');
+    const styles = getStyles(this.props, this.context);
+    const tooltipPosition = tooltipPositionProp.split('-');
 
     const tooltipElement = tooltip ? (
       <Tooltip
@@ -257,7 +206,7 @@ const IconButton = React.createClass({
         label={tooltip}
         show={this.state.tooltipShown}
         touch={touch}
-        style={Object.assign(styles.tooltip, this.props.tooltipStyles)}
+        style={Object.assign(styles.tooltip, tooltipStyles)}
         verticalPosition={tooltipPosition[0]}
         horizontalPosition={tooltipPosition[1]}
       />
@@ -274,12 +223,13 @@ const IconButton = React.createClass({
           className={iconClassName}
           hoverColor={disabled ? null : iconHoverColor}
           style={Object.assign(
-            styles.icon,
+            {},
             disabled && styles.disabled,
             iconStyleFontIcon
           )}
+          color={this.context.muiTheme.baseTheme.palette.textColor}
         >
-          {this.props.children}
+          {children}
         </FontIcon>
       );
     }
@@ -303,13 +253,12 @@ const IconButton = React.createClass({
       >
         {tooltipElement}
         {fonticon}
-        {extendChildren(this.props.children, {
+        {extendChildren(children, {
           style: childrenStyle,
         })}
       </EnhancedButton>
     );
-  },
-
-});
+  }
+}
 
 export default IconButton;

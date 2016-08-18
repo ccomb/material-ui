@@ -1,42 +1,46 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import transitions from '../styles/transitions';
 import SlideInTransitionGroup from '../internal/SlideIn';
 
-function getStyles(props, state) {
-  const {
-    datePicker,
-  } = props.muiTheme;
-
-  const {
-    selectedYear,
-  } = state;
+function getStyles(props, context, state) {
+  const {datePicker} = context.muiTheme;
+  const {selectedYear} = state;
+  const isLandscape = props.mode === 'landscape';
 
   const styles = {
     root: {
+      width: isLandscape ? 165 : '100%',
+      height: isLandscape ? 330 : 'auto',
+      float: isLandscape ? 'left' : 'none',
+      fontWeight: 700,
+      display: 'inline-block',
       backgroundColor: datePicker.selectColor,
       borderTopLeftRadius: 2,
-      borderTopRightRadius: 2,
+      borderTopRightRadius: isLandscape ? 0 : 2,
+      borderBottomLeftRadius: isLandscape ? 2 : 0,
       color: datePicker.textColor,
-      height: 60,
       padding: 20,
+      boxSizing: 'border-box',
     },
     monthDay: {
-      display: 'inline-block',
+      display: 'block',
       fontSize: 36,
-      fontWeight: '400',
       lineHeight: '36px',
-      height: props.mode === 'landscape' ? 76 : 38,
+      height: props.mode === 'landscape' ? '100%' : 38,
       opacity: selectedYear ? 0.7 : 1,
       transition: transitions.easeOut(),
       width: '100%',
+      fontWeight: '500',
     },
     monthDayTitle: {
       cursor: !selectedYear ? 'default' : 'pointer',
+      width: '100%',
+      display: 'block',
     },
     year: {
       margin: 0,
       fontSize: 16,
-      fontWeight: '400',
+      fontWeight: '500',
       lineHeight: '16px',
       height: 16,
       opacity: selectedYear ? 1 : 0.7,
@@ -44,55 +48,47 @@ function getStyles(props, state) {
       marginBottom: 10,
     },
     yearTitle: {
-      cursor: (!selectedYear && !props.disableYearSelection) ? 'pointer' : 'default',
+      cursor: props.disableYearSelection ? 'not-allowed' : (!selectedYear ? 'pointer' : 'default'),
     },
   };
 
   return styles;
 }
 
-const DateDisplay = React.createClass({
+class DateDisplay extends Component {
+  static propTypes = {
+    DateTimeFormat: PropTypes.func.isRequired,
+    disableYearSelection: PropTypes.bool,
+    locale: PropTypes.string.isRequired,
+    mode: PropTypes.oneOf(['portrait', 'landscape']),
+    monthDaySelected: PropTypes.bool,
+    onTouchTapMonthDay: PropTypes.func,
+    onTouchTapYear: PropTypes.func,
+    selectedDate: PropTypes.object.isRequired,
+    style: PropTypes.object,
+    weekCount: PropTypes.number,
+  };
 
-  propTypes: {
-    DateTimeFormat: React.PropTypes.func.isRequired,
-    disableYearSelection: React.PropTypes.bool,
-    locale: React.PropTypes.string.isRequired,
-    mode: React.PropTypes.oneOf([
-      'portrait',
-      'landscape',
-    ]),
-    monthDaySelected: React.PropTypes.bool,
+  static defaultProps = {
+    disableYearSelection: false,
+    monthDaySelected: true,
+    weekCount: 4,
+  };
 
-    /**
-     * @ignore
-     * The material-ui theme applied to this component.
-     */
-    muiTheme: React.PropTypes.object.isRequired,
-    onTouchTapMonthDay: React.PropTypes.func,
-    onTouchTapYear: React.PropTypes.func,
-    selectedDate: React.PropTypes.object.isRequired,
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-    /**
-     * Override the inline-styles of the root element.
-     */
-    style: React.PropTypes.object,
-    weekCount: React.PropTypes.number,
-  },
+  state = {
+    selectedYear: false,
+    transitionDirection: 'up',
+  };
 
-  getDefaultProps() {
-    return {
-      disableYearSelection: false,
-      monthDaySelected: true,
-      weekCount: 4,
-    };
-  },
-
-  getInitialState() {
-    return {
-      selectedYear: !this.props.monthDaySelected,
-      transitionDirection: 'up',
-    };
-  },
+  componentWillMount() {
+    if (!this.props.monthDaySelected) {
+      this.setState({selectedYear: true});
+    }
+  }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.selectedDate !== this.props.selectedDate) {
@@ -107,17 +103,17 @@ const DateDisplay = React.createClass({
         selectedYear: !nextProps.monthDaySelected,
       });
     }
-  },
+  }
 
-  handleTouchTapMonthDay() {
+  handleTouchTapMonthDay = () => {
     if (this.props.onTouchTapMonthDay && this.state.selectedYear) {
       this.props.onTouchTapMonthDay();
     }
 
     this.setState({selectedYear: false});
-  },
+  };
 
-  handleTouchTapYear() {
+  handleTouchTapYear = () => {
     if (this.props.onTouchTapYear && !this.props.disableYearSelection && !this.state.selectedYear) {
       this.props.onTouchTapYear();
     }
@@ -125,22 +121,26 @@ const DateDisplay = React.createClass({
     if (!this.props.disableYearSelection) {
       this.setState({selectedYear: true});
     }
-  },
+  };
 
   render() {
     const {
       DateTimeFormat,
+      disableYearSelection, // eslint-disable-line no-unused-vars
       locale,
-      selectedDate,
+      mode, // eslint-disable-line no-unused-vars
+      monthDaySelected, // eslint-disable-line no-unused-vars
+      onTouchTapMonthDay, // eslint-disable-line no-unused-vars
+      onTouchTapYear, // eslint-disable-line no-unused-vars
+      selectedDate, // eslint-disable-line no-unused-vars
       style,
-      muiTheme: {
-        prepareStyles,
-      },
+      weekCount, // eslint-disable-line no-unused-vars
       ...other,
     } = this.props;
 
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context, this.state);
     const year = selectedDate.getFullYear();
-    const styles = getStyles(this.props, this.state);
 
     const dateTimeFormatted = new DateTimeFormat(locale, {
       month: 'short',
@@ -149,7 +149,7 @@ const DateDisplay = React.createClass({
     }).format(selectedDate);
 
     return (
-      <div {...other} style={prepareStyles(Object.assign(styles.root, style))}>
+      <div {...other} style={prepareStyles(styles.root, style)}>
         <SlideInTransitionGroup
           style={styles.year}
           direction={this.state.transitionDirection}
@@ -164,16 +164,15 @@ const DateDisplay = React.createClass({
         >
           <div
             key={dateTimeFormatted}
-            style={styles.monthDayTitle}
             onTouchTap={this.handleTouchTapMonthDay}
+            style={styles.monthDayTitle}
           >
             {dateTimeFormatted}
           </div>
         </SlideInTransitionGroup>
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default DateDisplay;

@@ -1,4 +1,4 @@
-import React from 'react';
+import {Component, PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import events from '../utils/events';
 
@@ -9,18 +9,18 @@ const isDescendant = (el, target) => {
   return false;
 };
 
-const clickAwayEvents = ['mousedown', 'touchstart'];
+const clickAwayEvents = ['mouseup', 'touchend'];
 const bind = (callback) => clickAwayEvents.forEach((event) => events.on(document, event, callback));
 const unbind = (callback) => clickAwayEvents.forEach((event) => events.off(document, event, callback));
 
-export default class ClickAwayListener extends React.Component {
-
+class ClickAwayListener extends Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    onClickAway: React.PropTypes.any,
+    children: PropTypes.node,
+    onClickAway: PropTypes.any,
   };
 
   componentDidMount() {
+    this.isCurrentlyMounted = true;
     if (this.props.onClickAway) {
       bind(this.handleClickAway);
     }
@@ -36,6 +36,7 @@ export default class ClickAwayListener extends React.Component {
   }
 
   componentWillUnmount() {
+    this.isCurrentlyMounted = false;
     unbind(this.handleClickAway);
   }
 
@@ -44,10 +45,13 @@ export default class ClickAwayListener extends React.Component {
       return;
     }
 
-    const el = ReactDOM.findDOMNode(this);
+    // IE11 support, which trigger the handleClickAway even after the unbind
+    if (this.isCurrentlyMounted) {
+      const el = ReactDOM.findDOMNode(this);
 
-    if (document.documentElement.contains(event.target) && !isDescendant(el, event.target)) {
-      this.props.onClickAway(event);
+      if (document.documentElement.contains(event.target) && !isDescendant(el, event.target)) {
+        this.props.onClickAway(event);
+      }
     }
   };
 
@@ -55,3 +59,5 @@ export default class ClickAwayListener extends React.Component {
     return this.props.children;
   }
 }
+
+export default ClickAwayListener;

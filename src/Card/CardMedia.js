@@ -1,10 +1,8 @@
-import React from 'react';
-import getMuiTheme from '../styles/getMuiTheme';
+import React, {Component, PropTypes} from 'react';
 
-function getStyles(props, state) {
-  const {
-    cardMedia,
- } = state.muiTheme;
+function getStyles(props, context) {
+  const {cardMedia} = context.muiTheme;
+
   return {
     root: {
       position: 'relative',
@@ -38,109 +36,88 @@ function getStyles(props, state) {
   };
 }
 
-const CardMedia = React.createClass({
-
-  propTypes: {
+class CardMedia extends Component {
+  static propTypes = {
     /**
      * If true, a click on this card component expands the card.
      */
-    actAsExpander: React.PropTypes.bool,
-
+    actAsExpander: PropTypes.bool,
     /**
      * Can be used to render elements inside the Card Media.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * If true, this card component is expandable.
      */
-    expandable: React.PropTypes.bool,
-
+    expandable: PropTypes.bool,
     /**
      * Override the inline-styles of the Card Media.
      */
-    mediaStyle: React.PropTypes.object,
-
+    mediaStyle: PropTypes.object,
     /**
      * Can be used to render overlay element in Card Media.
      */
-    overlay: React.PropTypes.node,
-
+    overlay: PropTypes.node,
     /**
      * Override the inline-styles of the overlay container.
      */
-    overlayContainerStyle: React.PropTypes.object,
-
+    overlayContainerStyle: PropTypes.object,
     /**
      * Override the inline-styles of the overlay content.
      */
-    overlayContentStyle: React.PropTypes.object,
-
+    overlayContentStyle: PropTypes.object,
     /**
      * Override the inline-styles of the overlay element.
      */
-    overlayStyle: React.PropTypes.object,
-
+    overlayStyle: PropTypes.object,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-  },
+    style: PropTypes.object,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
   render() {
     const {
-      prepareStyles,
-    } = this.state.muiTheme;
+      actAsExpander, // eslint-disable-line no-unused-vars
+      children,
+      expandable, // eslint-disable-line no-unused-vars
+      mediaStyle,
+      overlay,
+      overlayContainerStyle,
+      overlayContentStyle,
+      overlayStyle,
+      style,
+      ...other,
+    } = this.props;
 
-    const styles = getStyles(this.props, this.state);
-    const rootStyle = Object.assign(styles.root, this.props.style);
-    const mediaStyle = Object.assign(styles.media, this.props.mediaStyle);
-    const overlayContainerStyle = Object.assign(styles.overlayContainer, this.props.overlayContainerStyle);
-    const overlayContentStyle = Object.assign(styles.overlayContent, this.props.overlayContentStyle);
-    const overlayStyle = Object.assign(styles.overlay, this.props.overlayStyle);
-    const titleColor = this.state.muiTheme.cardMedia.titleColor;
-    const subtitleColor = this.state.muiTheme.cardMedia.subtitleColor;
-    const color = this.state.muiTheme.cardMedia.color;
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context);
+    const rootStyle = Object.assign(styles.root, style);
+    const extendedMediaStyle = Object.assign(styles.media, mediaStyle);
+    const extendedOverlayContainerStyle = Object.assign(styles.overlayContainer, overlayContainerStyle);
+    const extendedOverlayContentStyle = Object.assign(styles.overlayContent, overlayContentStyle);
+    const extendedOverlayStyle = Object.assign(styles.overlay, overlayStyle);
+    const titleColor = this.context.muiTheme.cardMedia.titleColor;
+    const subtitleColor = this.context.muiTheme.cardMedia.subtitleColor;
+    const color = this.context.muiTheme.cardMedia.color;
 
-    const children = React.Children.map(this.props.children, (child) => {
+    const styledChildren = React.Children.map(children, (child) => {
       return React.cloneElement(child, {
         style: prepareStyles(Object.assign({}, styles.mediaChild, child.props.style)),
       });
     });
 
-    const overlayChildren = React.Children.map(this.props.overlay, (child) => {
-      if (child.type.displayName === 'CardHeader' || child.type.displayName === 'CardTitle') {
+    const overlayChildren = React.Children.map(overlay, (child) => {
+      if (child.type.muiName === 'CardHeader' || child.type.muiName === 'CardTitle') {
         return React.cloneElement(child, {
           titleColor: titleColor,
           subtitleColor: subtitleColor,
         });
-      } else if (child.type.displayName === 'CardText') {
+      } else if (child.type.muiName === 'CardText') {
         return React.cloneElement(child, {
           color: color,
         });
@@ -150,21 +127,21 @@ const CardMedia = React.createClass({
     });
 
     return (
-      <div {...this.props} style={prepareStyles(rootStyle)}>
-        <div style={prepareStyles(mediaStyle)}>
-          {children}
+      <div {...other} style={prepareStyles(rootStyle)}>
+        <div style={prepareStyles(extendedMediaStyle)}>
+          {styledChildren}
         </div>
-        {(this.props.overlay) ?
-          <div style={prepareStyles(overlayContainerStyle)}>
-            <div style={prepareStyles(overlayStyle)}>
-              <div style={prepareStyles(overlayContentStyle)}>
+        {overlay ?
+          <div style={prepareStyles(extendedOverlayContainerStyle)}>
+            <div style={prepareStyles(extendedOverlayStyle)}>
+              <div style={prepareStyles(extendedOverlayContentStyle)}>
                 {overlayChildren}
               </div>
             </div>
           </div> : ''}
       </div>
     );
-  },
-});
+  }
+}
 
 export default CardMedia;

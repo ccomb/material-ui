@@ -1,8 +1,7 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import transitions from '../styles/transitions';
-import getMuiTheme from '../styles/getMuiTheme';
 
-function getStyles(props, state) {
+function getStyles(props, context, state) {
   const verticalPosition = props.verticalPosition;
   const horizontalPosition = props.horizontalPosition;
   const touchMarginOffset = props.touch ? 10 : 0;
@@ -14,7 +13,7 @@ function getStyles(props, state) {
     baseTheme,
     zIndex,
     tooltip,
-  } = state.muiTheme;
+  } = context.muiTheme;
 
   const styles = {
     root: {
@@ -57,7 +56,7 @@ function getStyles(props, state) {
       top: verticalPosition === 'top' ?
         touchOffsetTop : 36,
       opacity: 0.9,
-      transform: `translate3d(0px, ${offset}px, 0px)`,
+      transform: `translate(0px, ${offset}px)`,
       transition: `${transitions.easeOut('0ms', 'top', '0ms')}, ${
         transitions.easeOut('450ms', 'transform', '0ms')}, ${
         transitions.easeOut('450ms', 'opacity', '0ms')}`,
@@ -78,63 +77,45 @@ function getStyles(props, state) {
   return styles;
 }
 
-const Tooltip = React.createClass({
-
-  propTypes: {
+class Tooltip extends Component {
+  static propTypes = {
     /**
      * The css class name of the root element.
      */
-    className: React.PropTypes.string,
-    horizontalPosition: React.PropTypes.oneOf(['left', 'right', 'center']),
-    label: React.PropTypes.node.isRequired,
-    show: React.PropTypes.bool,
-
+    className: PropTypes.string,
+    horizontalPosition: PropTypes.oneOf(['left', 'right', 'center']),
+    label: PropTypes.node.isRequired,
+    show: PropTypes.bool,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-    touch: React.PropTypes.bool,
-    verticalPosition: React.PropTypes.oneOf(['top', 'bottom']),
-  },
+    style: PropTypes.object,
+    touch: PropTypes.bool,
+    verticalPosition: PropTypes.oneOf(['top', 'bottom']),
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
-
-  getInitialState() {
-    return {
-      offsetWidth: null,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+  state = {
+    offsetWidth: null,
+  };
 
   componentDidMount() {
-    this._setRippleSize();
-    this._setTooltipPosition();
-  },
+    this.setRippleSize();
+    this.setTooltipPosition();
+  }
 
-  componentWillReceiveProps(nextProps, nextContext) {
-    this._setTooltipPosition();
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-  },
+  componentWillReceiveProps() {
+    this.setTooltipPosition();
+  }
 
   componentDidUpdate() {
-    this._setRippleSize();
-  },
+    this.setRippleSize();
+  }
 
-  _setRippleSize() {
+  setRippleSize() {
     const ripple = this.refs.ripple;
     const tooltip = this.refs.tooltip;
     const tooltipWidth = parseInt(tooltip.offsetWidth, 10) /
@@ -150,22 +131,24 @@ const Tooltip = React.createClass({
       ripple.style.width = '0px';
       ripple.style.height = '0px';
     }
-  },
+  }
 
-  _setTooltipPosition() {
+  setTooltipPosition() {
     this.setState({offsetWidth: this.refs.tooltip.offsetWidth});
-  },
+  }
 
   render() {
     const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
-    const {
+      horizontalPosition, // eslint-disable-line no-unused-vars
       label,
+      show, // eslint-disable-line no-unused-vars
+      touch, // eslint-disable-line no-unused-vars
+      verticalPosition, // eslint-disable-line no-unused-vars
       ...other,
     } = this.props;
-    const styles = getStyles(this.props, this.state);
+
+    const {prepareStyles} = this.context.muiTheme;
+    const styles = getStyles(this.props, this.context, this.state);
 
     return (
       <div
@@ -191,8 +174,7 @@ const Tooltip = React.createClass({
         </span>
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default Tooltip;

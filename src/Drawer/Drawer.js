@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import EventListener from 'react-event-listener';
 import keycode from 'keycode';
@@ -6,45 +6,37 @@ import autoPrefix from '../utils/autoPrefix';
 import transitions from '../styles/transitions';
 import Overlay from '../internal/Overlay';
 import Paper from '../Paper';
-import getMuiTheme from '../styles/getMuiTheme';
 import propTypes from '../utils/propTypes';
 
 let openNavEventHandler = null;
 
-const Drawer = React.createClass({
-
-  propTypes: {
+class Drawer extends Component {
+  static propTypes = {
     /**
      * The contents of the `Drawer`
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * The CSS class name of the root element.
      */
-    className: React.PropTypes.string,
-
+    className: PropTypes.string,
     /**
      * The CSS class name of the container element.
      */
-    containerClassName: React.PropTypes.string,
-
+    containerClassName: PropTypes.string,
     /**
      * Override the inline-styles of the container element.
      */
-    containerStyle: React.PropTypes.object,
-
+    containerStyle: PropTypes.object,
     /**
      * If true, swiping sideways when the `Drawer` is closed will not open it.
      */
-    disableSwipeToOpen: React.PropTypes.bool,
-
+    disableSwipeToOpen: PropTypes.bool,
     /**
      * If true, the `Drawer` will be docked. In this state, the overlay won't show and
      * clicking on a menu item will not close the `Drawer`.
      */
-    docked: React.PropTypes.bool,
-
+    docked: PropTypes.bool,
     /**
      * Callback function fired when the `open` state of the `Drawer` is requested to be changed.
      *
@@ -53,132 +45,113 @@ const Drawer = React.createClass({
      * 'swipe' for open requests; 'clickaway' (on overlay clicks),
      * 'escape' (on escape key press), and 'swipe' for close requests.
      */
-    onRequestChange: React.PropTypes.func,
-
+    onRequestChange: PropTypes.func,
     /**
      * If true, the `Drawer` is opened.  Providing a value will turn the `Drawer`
      * into a controlled component.
      */
-    open: React.PropTypes.bool,
-
+    open: PropTypes.bool,
     /**
      * If true, the `Drawer` is positioned to open from the opposite side.
      */
-    openSecondary: React.PropTypes.bool,
-
+    openSecondary: PropTypes.bool,
     /**
      * The CSS class name to add to the `Overlay` component that is rendered behind the `Drawer`.
      */
-    overlayClassName: React.PropTypes.string,
-
+    overlayClassName: PropTypes.string,
     /**
      * Override the inline-styles of the `Overlay` component that is rendered behind the `Drawer`.
      */
-    overlayStyle: React.PropTypes.object,
-
+    overlayStyle: PropTypes.object,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
      * The width of the left most (or right most) area in pixels where the `Drawer` can be
      * swiped open from. Setting this to `null` spans that area to the entire page
      * (**CAUTION!** Setting this property to `null` might cause issues with sliders and
      * swipeable `Tabs`: use at your own risk).
      */
-    swipeAreaWidth: React.PropTypes.number,
-
+    swipeAreaWidth: PropTypes.number,
     /**
      * The width of the `Drawer` in pixels. Defaults to using the values from theme.
      */
-    width: React.PropTypes.number,
-
+    width: PropTypes.number,
     /**
      * The zDepth of the `Drawer`.
      */
     zDepth: propTypes.zDepth,
 
-  },
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    disableSwipeToOpen: false,
+    docked: true,
+    open: null,
+    openSecondary: false,
+    swipeAreaWidth: 30,
+    width: null,
+    zDepth: 2,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      disableSwipeToOpen: false,
-      docked: true,
-      open: null,
-      openSecondary: false,
-      swipeAreaWidth: 30,
-      width: null,
-      zDepth: 2,
-    };
-  },
+  componentWillMount() {
+    this.maybeSwiping = false;
+    this.touchStartX = null;
+    this.touchStartY = null;
+    this.swipeStartX = null;
 
-  getInitialState() {
-    this._maybeSwiping = false;
-    this._touchStartX = null;
-    this._touchStartY = null;
-    this._swipeStartX = null;
-
-    return {
+    this.setState({
       open: (this.props.open !== null ) ? this.props.open : this.props.docked,
       swiping: null,
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-    };
-  },
-
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
+    });
+  }
 
   componentDidMount() {
-    this._enableSwipeHandling();
-  },
+    this.enableSwipeHandling();
+  }
 
-  componentWillReceiveProps(nextProps, nextContext) {
-    const newState = {muiTheme: nextContext.muiTheme || this.state.muiTheme};
-
-    // If docked is changed, change the open state for when uncontrolled.
-    if (this.props.docked !== nextProps.docked) newState.open = nextProps.docked;
-
+  componentWillReceiveProps(nextProps) {
     // If controlled then the open prop takes precedence.
-    if (nextProps.open !== null) newState.open = nextProps.open;
-
-    this.setState(newState);
-  },
+    if (nextProps.open !== null) {
+      this.setState({
+        open: nextProps.open,
+      });
+      // Otherwise, if docked is changed, change the open state for when uncontrolled.
+    } else if (this.props.docked !== nextProps.docked) {
+      this.setState({
+        open: nextProps.docked,
+      });
+    }
+  }
 
   componentDidUpdate() {
-    this._enableSwipeHandling();
-  },
+    this.enableSwipeHandling();
+  }
 
   componentWillUnmount() {
-    this._disableSwipeHandling();
-  },
+    this.disableSwipeHandling();
+  }
 
   getStyles() {
-    const muiTheme = this.state.muiTheme;
-    const theme = muiTheme.navDrawer;
+    const muiTheme = this.context.muiTheme;
+    const theme = muiTheme.drawer;
 
-    const x = this._getTranslateMultiplier() * (this.state.open ? 0 : this._getMaxTranslateX());
+    const x = this.getTranslateMultiplier() * (this.state.open ? 0 : this.getMaxTranslateX());
 
     const styles = {
       root: {
         height: '100%',
         width: this.props.width || theme.width,
         position: 'fixed',
-        zIndex: muiTheme.zIndex.navDrawer,
+        zIndex: muiTheme.zIndex.drawer,
         left: 0,
         top: 0,
-        transform: `translate3d(${x}px, 0, 0)`,
+        transform: `translate(${x}px, 0)`,
         transition: !this.state.swiping && transitions.easeOut(null, 'transform', null),
         backgroundColor: theme.color,
         overflow: 'auto',
@@ -195,63 +168,63 @@ const Drawer = React.createClass({
     };
 
     return styles;
-  },
+  }
 
-  _shouldShow() {
+  shouldShow() {
     return this.state.open || !!this.state.swiping;  // component is swiping
-  },
+  }
 
-  _close(reason) {
+  close(reason) {
     if (this.props.open === null) this.setState({open: false});
     if (this.props.onRequestChange) this.props.onRequestChange(false, reason);
     return this;
-  },
+  }
 
-  _open(reason) {
+  open(reason) {
     if (this.props.open === null) this.setState({open: true});
     if (this.props.onRequestChange) this.props.onRequestChange(true, reason);
     return this;
-  },
+  }
 
-  handleTouchTapOverlay(event) {
+  handleTouchTapOverlay = (event) => {
     event.preventDefault();
-    this._close('clickaway');
-  },
+    this.close('clickaway');
+  };
 
-  handleKeyUp(event) {
+  handleKeyUp = (event) => {
     if (this.state.open && !this.props.docked && keycode(event) === 'esc') {
-      this._close('escape');
+      this.close('escape');
     }
-  },
+  };
 
-  _getMaxTranslateX() {
-    const width = this.props.width || this.state.muiTheme.navDrawer.width;
+  getMaxTranslateX() {
+    const width = this.props.width || this.context.muiTheme.drawer.width;
     return width + 10;
-  },
+  }
 
-  _getTranslateMultiplier() {
+  getTranslateMultiplier() {
     return this.props.openSecondary ? 1 : -1;
-  },
+  }
 
-  _enableSwipeHandling() {
+  enableSwipeHandling() {
     if (!this.props.docked) {
-      document.body.addEventListener('touchstart', this._onBodyTouchStart);
+      document.body.addEventListener('touchstart', this.onBodyTouchStart);
       if (!openNavEventHandler) {
-        openNavEventHandler = this._onBodyTouchStart;
+        openNavEventHandler = this.onBodyTouchStart;
       }
     } else {
-      this._disableSwipeHandling();
+      this.disableSwipeHandling();
     }
-  },
+  }
 
-  _disableSwipeHandling() {
-    document.body.removeEventListener('touchstart', this._onBodyTouchStart);
-    if (openNavEventHandler === this._onBodyTouchStart) {
+  disableSwipeHandling() {
+    document.body.removeEventListener('touchstart', this.onBodyTouchStart);
+    if (openNavEventHandler === this.onBodyTouchStart) {
       openNavEventHandler = null;
     }
-  },
+  }
 
-  _onBodyTouchStart(event) {
+  onBodyTouchStart = (event) => {
     const swipeAreaWidth = this.props.swipeAreaWidth;
 
     const touchStartX = event.touches[0].pageX;
@@ -269,73 +242,73 @@ const Drawer = React.createClass({
     }
 
     if (!this.state.open &&
-         (openNavEventHandler !== this._onBodyTouchStart ||
+         (openNavEventHandler !== this.onBodyTouchStart ||
           this.props.disableSwipeToOpen)
        ) {
       return;
     }
 
-    this._maybeSwiping = true;
-    this._touchStartX = touchStartX;
-    this._touchStartY = touchStartY;
+    this.maybeSwiping = true;
+    this.touchStartX = touchStartX;
+    this.touchStartY = touchStartY;
 
-    document.body.addEventListener('touchmove', this._onBodyTouchMove);
-    document.body.addEventListener('touchend', this._onBodyTouchEnd);
-    document.body.addEventListener('touchcancel', this._onBodyTouchEnd);
-  },
+    document.body.addEventListener('touchmove', this.onBodyTouchMove);
+    document.body.addEventListener('touchend', this.onBodyTouchEnd);
+    document.body.addEventListener('touchcancel', this.onBodyTouchEnd);
+  };
 
-  _setPosition(translateX) {
+  setPosition(translateX) {
     const drawer = ReactDOM.findDOMNode(this.refs.clickAwayableElement);
-    const transformCSS = `translate3d(${(this._getTranslateMultiplier() * translateX)}px, 0, 0)`;
-    this.refs.overlay.setOpacity(1 - translateX / this._getMaxTranslateX());
-    autoPrefix.set(drawer.style, 'transform', transformCSS, this.state.muiTheme);
-  },
+    const transformCSS = `translate(${(this.getTranslateMultiplier() * translateX)}px, 0)`;
+    this.refs.overlay.setOpacity(1 - translateX / this.getMaxTranslateX());
+    autoPrefix.set(drawer.style, 'transform', transformCSS);
+  }
 
-  _getTranslateX(currentX) {
+  getTranslateX(currentX) {
     return Math.min(
              Math.max(
                this.state.swiping === 'closing' ?
-                 this._getTranslateMultiplier() * (currentX - this._swipeStartX) :
-                 this._getMaxTranslateX() - this._getTranslateMultiplier() * (this._swipeStartX - currentX),
+                 this.getTranslateMultiplier() * (currentX - this.swipeStartX) :
+                 this.getMaxTranslateX() - this.getTranslateMultiplier() * (this.swipeStartX - currentX),
                0
              ),
-             this._getMaxTranslateX()
+             this.getMaxTranslateX()
            );
-  },
+  }
 
-  _onBodyTouchMove(event) {
+  onBodyTouchMove = (event) => {
     const currentX = event.touches[0].pageX;
     const currentY = event.touches[0].pageY;
 
     if (this.state.swiping) {
       event.preventDefault();
-      this._setPosition(this._getTranslateX(currentX));
-    } else if (this._maybeSwiping) {
-      const dXAbs = Math.abs(currentX - this._touchStartX);
-      const dYAbs = Math.abs(currentY - this._touchStartY);
+      this.setPosition(this.getTranslateX(currentX));
+    } else if (this.maybeSwiping) {
+      const dXAbs = Math.abs(currentX - this.touchStartX);
+      const dYAbs = Math.abs(currentY - this.touchStartY);
       // If the user has moved his thumb ten pixels in either direction,
       // we can safely make an assumption about whether he was intending
       // to swipe or scroll.
       const threshold = 10;
 
       if (dXAbs > threshold && dYAbs <= threshold) {
-        this._swipeStartX = currentX;
+        this.swipeStartX = currentX;
         this.setState({
           swiping: this.state.open ? 'closing' : 'opening',
         });
-        this._setPosition(this._getTranslateX(currentX));
+        this.setPosition(this.getTranslateX(currentX));
       } else if (dXAbs <= threshold && dYAbs > threshold) {
-        this._onBodyTouchEnd();
+        this.onBodyTouchEnd();
       }
     }
-  },
+  };
 
-  _onBodyTouchEnd(event) {
+  onBodyTouchEnd = (event) => {
     if (this.state.swiping) {
       const currentX = event.changedTouches[0].pageX;
-      const translateRatio = this._getTranslateX(currentX) / this._getMaxTranslateX();
+      const translateRatio = this.getTranslateX(currentX) / this.getMaxTranslateX();
 
-      this._maybeSwiping = false;
+      this.maybeSwiping = false;
       const swiping = this.state.swiping;
       this.setState({
         swiping: null,
@@ -345,25 +318,25 @@ const Drawer = React.createClass({
       // because only then CSS transition is enabled.
       if (translateRatio > 0.5) {
         if (swiping === 'opening') {
-          this._setPosition(this._getMaxTranslateX());
+          this.setPosition(this.getMaxTranslateX());
         } else {
-          this._close('swipe');
+          this.close('swipe');
         }
       } else {
         if (swiping === 'opening') {
-          this._open('swipe');
+          this.open('swipe');
         } else {
-          this._setPosition(0);
+          this.setPosition(0);
         }
       }
     } else {
-      this._maybeSwiping = false;
+      this.maybeSwiping = false;
     }
 
-    document.body.removeEventListener('touchmove', this._onBodyTouchMove);
-    document.body.removeEventListener('touchend', this._onBodyTouchEnd);
-    document.body.removeEventListener('touchcancel', this._onBodyTouchEnd);
-  },
+    document.body.removeEventListener('touchmove', this.onBodyTouchMove);
+    document.body.removeEventListener('touchend', this.onBodyTouchEnd);
+    document.body.removeEventListener('touchcancel', this.onBodyTouchEnd);
+  };
 
   render() {
     const {
@@ -386,7 +359,7 @@ const Drawer = React.createClass({
       overlay = (
         <Overlay
           ref="overlay"
-          show={this._shouldShow()}
+          show={this.shouldShow()}
           className={overlayClassName}
           style={Object.assign(styles.overlay, overlayStyle)}
           transitionEnabled={!this.state.swiping}
@@ -400,7 +373,7 @@ const Drawer = React.createClass({
         className={className}
         style={style}
       >
-        <EventListener elementName="window" onKeyUp={this.handleKeyUp} />
+        <EventListener target="window" onKeyUp={this.handleKeyUp} />
         {overlay}
         <Paper
           ref="clickAwayableElement"
@@ -414,7 +387,7 @@ const Drawer = React.createClass({
         </Paper>
       </div>
     );
-  },
-});
+  }
+}
 
 export default Drawer;

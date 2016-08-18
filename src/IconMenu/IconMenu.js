@@ -1,14 +1,15 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import Events from '../utils/events';
 import propTypes from '../utils/propTypes';
 import Menu from '../Menu/Menu';
-import getMuiTheme from '../styles/getMuiTheme';
 import Popover from '../Popover/Popover';
+import warning from 'warning';
 
-const IconMenu = React.createClass({
+class IconMenu extends Component {
+  static muiName = 'IconMenu';
 
-  propTypes: {
+  static propTypes = {
     /**
      * This is the point on the icon where the menu
      * `targetOrigin` will attach.
@@ -17,81 +18,61 @@ const IconMenu = React.createClass({
      * horizontal: [left, center, right].
      */
     anchorOrigin: propTypes.origin,
-
+    /**
+     * If true, the popover will apply transitions when
+     * it gets added to the DOM.
+     */
+    animated: PropTypes.bool,
+    /**
+     * Override the default animation component used.
+     */
+    animation: PropTypes.func,
     /**
      * Should be used to pass `MenuItem` components.
      */
-    children: React.PropTypes.node,
-
+    children: PropTypes.node,
     /**
      * The CSS class name of the root element.
      */
-    className: React.PropTypes.string,
-
+    className: PropTypes.string,
     /**
      * This is the `IconButton` to render. This button will open the menu.
      */
-    iconButtonElement: React.PropTypes.element.isRequired,
-
+    iconButtonElement: PropTypes.element.isRequired,
     /**
      * Override the inline-styles of the underlying icon element.
      */
-    iconStyle: React.PropTypes.object,
-
+    iconStyle: PropTypes.object,
     /**
      * Override the inline-styles of the menu element.
      */
-    menuStyle: React.PropTypes.object,
-
+    menuStyle: PropTypes.object,
     /**
      * If true, the value can an be array and allow the menu to be a multi-select.
      */
-    multiple: React.PropTypes.bool,
-
+    multiple: PropTypes.bool,
     /**
      * Callback function fired when a menu item is selected with a touch-tap.
      *
      * @param {object} event TouchTap event targeting the selected menu item element.
      * @param {object} child The selected element.
      */
-    onItemTouchTap: React.PropTypes.func,
-
+    onItemTouchTap: PropTypes.func,
     /**
      * Callback function fired when the `IconButton` element is focused or blurred by the keyboard.
      *
      * @param {object} event `focus` or `blur` event targeting the `IconButton` element.
      * @param {boolean} keyboardFocused If true, the `IconButton` element is focused.
      */
-    onKeyboardFocus: React.PropTypes.func,
-
-    /**
-     * Callback function fired when a mouse button is pressed down on the `IconButton` element.
-     *
-     * @param {object} event `mousedown` event targeting the `IconButton` element.
-     */
-    onMouseDown: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse enters the `IconButton` element.
-     *
-     * @param {object} event `mouseenter` event targeting the `IconButton` element.
-     */
-    onMouseEnter: React.PropTypes.func,
-
-    /**
-     * Callback function fired when the mouse leaves the `IconButton` element.
-     *
-     * @param {object} event `mouseleave` event targeting the `IconButton` element.
-     */
-    onMouseLeave: React.PropTypes.func,
-
-    /**
-     * Callback function fired when a mouse button is released on the `IconButton` element.
-     *
-     * @param {object} event `mouseup` event targeting the `IconButton` element.
-     */
-    onMouseUp: React.PropTypes.func,
-
+    onKeyboardFocus: PropTypes.func,
+    /** @ignore */
+    onMouseDown: PropTypes.func,
+    /** @ignore */
+    onMouseEnter: PropTypes.func,
+    /** @ignore */
+    onMouseLeave: PropTypes.func,
+    /** @ignore */
+    onMouseUp: PropTypes.func,
     /**
      * Callback function fired when the `open` state of the menu is requested to be changed.
      *
@@ -100,25 +81,21 @@ const IconMenu = React.createClass({
      * 'keyboard' and 'iconTap' for open requests; 'enter', 'escape', 'itemTap', and 'clickAway'
      * for close requests.
      */
-    onRequestChange: React.PropTypes.func,
-
+    onRequestChange: PropTypes.func,
     /**
      * Callback function fired when the `IconButton` element is touch-tapped.
      *
      * @param {object} event TouchTap event targeting the `IconButton` element.
      */
-    onTouchTap: React.PropTypes.func,
-
+    onTouchTap: PropTypes.func,
     /**
      * If true, the `IconMenu` is opened.
      */
-    open: React.PropTypes.bool,
-
+    open: PropTypes.bool,
     /**
      * Override the inline-styles of the root element.
      */
-    style: React.PropTypes.object,
-
+    style: PropTypes.object,
     /**
      * This is the point on the menu which will stick to the menu
      * origin.
@@ -127,89 +104,69 @@ const IconMenu = React.createClass({
      * horizontal: [left, center, right].
      */
     targetOrigin: propTypes.origin,
-
     /**
      * Sets the delay in milliseconds before closing the
      * menu when an item is clicked.
      * If set to 0 then the auto close functionality
      * will be disabled.
      */
-    touchTapCloseDelay: React.PropTypes.number,
-
+    touchTapCloseDelay: PropTypes.number,
     /**
      * If true, the popover will render on top of an invisible
      * layer, which will prevent clicks to the underlying elements.
      */
-    useLayerForClickAway: React.PropTypes.bool,
-  },
+    useLayerForClickAway: PropTypes.bool,
+  };
 
-  contextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static defaultProps = {
+    anchorOrigin: {
+      vertical: 'top',
+      horizontal: 'left',
+    },
+    animated: true,
+    multiple: false,
+    open: null,
+    onItemTouchTap: () => {},
+    onKeyboardFocus: () => {},
+    onMouseDown: () => {},
+    onMouseLeave: () => {},
+    onMouseEnter: () => {},
+    onMouseUp: () => {},
+    onRequestChange: () => {},
+    onTouchTap: () => {},
+    targetOrigin: {
+      vertical: 'top',
+      horizontal: 'left',
+    },
+    touchTapCloseDelay: 200,
+    useLayerForClickAway: false,
+  };
 
-  childContextTypes: {
-    muiTheme: React.PropTypes.object,
-  },
+  static contextTypes = {
+    muiTheme: PropTypes.object.isRequired,
+  };
 
-  getDefaultProps() {
-    return {
-      anchorOrigin: {
-        vertical: 'top',
-        horizontal: 'left',
-      },
-      multiple: false,
-      open: null,
-      onItemTouchTap: () => {},
-      onKeyboardFocus: () => {},
-      onMouseDown: () => {},
-      onMouseLeave: () => {},
-      onMouseEnter: () => {},
-      onMouseUp: () => {},
-      onTouchTap: () => {},
-      onRequestChange: () => {},
-      targetOrigin: {
-        vertical: 'top',
-        horizontal: 'left',
-      },
-      touchTapCloseDelay: 200,
-      useLayerForClickAway: false,
-    };
-  },
+  state = {
+    menuInitiallyKeyboardFocused: false,
+    open: false,
+  };
 
-  getInitialState() {
-    return {
-      muiTheme: this.context.muiTheme || getMuiTheme(),
-      iconButtonRef: this.props.iconButtonElement.props.ref || 'iconButton',
-      menuInitiallyKeyboardFocused: false,
-      open: false,
-    };
-  },
-  getChildContext() {
-    return {
-      muiTheme: this.state.muiTheme,
-    };
-  },
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.setState({
-      muiTheme: nextContext.muiTheme || this.state.muiTheme,
-    });
-
+  componentWillReceiveProps(nextProps) {
     if (nextProps.open != null) {
       this.setState({
         open: nextProps.open,
         anchorEl: this.refs.iconMenuContainer,
       });
     }
-  },
+  }
 
   componentWillUnmount() {
     clearTimeout(this.timerCloseId);
-  },
+  }
 
   isOpen() {
     return this.state.open;
-  },
+  }
 
   close(reason, isKeyboard) {
     if (!this.state.open) {
@@ -221,14 +178,14 @@ const IconMenu = React.createClass({
     }
 
     this.setState({open: false}, () => {
-      //Set focus on the icon button when the menu close
+      // Set focus on the icon button when the menu close
       if (isKeyboard) {
-        const iconButton = this.refs[this.state.iconButtonRef];
+        const iconButton = this.refs.iconButton;
         ReactDOM.findDOMNode(iconButton).focus();
         iconButton.setKeyboardFocus();
       }
     });
-  },
+  }
 
   open(reason, event) {
     if (this.props.open !== null) {
@@ -247,9 +204,9 @@ const IconMenu = React.createClass({
     });
 
     event.preventDefault();
-  },
+  }
 
-  handleItemTouchTap(event, child) {
+  handleItemTouchTap = (event, child) => {
     if (this.props.touchTapCloseDelay !== 0 && !child.props.hasOwnProperty('menuItems')) {
       const isKeyboard = Events.isKeyboard(event);
       this.timerCloseId = setTimeout(() => {
@@ -258,40 +215,41 @@ const IconMenu = React.createClass({
     }
 
     this.props.onItemTouchTap(event, child);
-  },
+  };
 
-  handleRequestClose(reason) {
+  handleRequestClose = (reason) => {
     this.close(reason);
-  },
+  };
 
-  handleEscKeyDownMenu(event) {
+  handleEscKeyDownMenu = (event) => {
     this.close('escape', event);
-  },
+  };
 
   render() {
     const {
       anchorOrigin,
       className,
+      animated,
+      animation,
       iconButtonElement,
       iconStyle,
-      onItemTouchTap,
+      onItemTouchTap, // eslint-disable-line no-unused-vars
       onKeyboardFocus,
       onMouseDown,
       onMouseLeave,
       onMouseEnter,
       onMouseUp,
+      onRequestChange, // eslint-disable-line no-unused-vars
       onTouchTap,
       menuStyle,
       style,
       targetOrigin,
+      touchTapCloseDelay, // eslint-disable-line no-unused-vars
       useLayerForClickAway,
       ...other,
     } = this.props;
 
-    const {
-      prepareStyles,
-    } = this.state.muiTheme;
-
+    const {prepareStyles} = this.context.muiTheme;
     const {open, anchorEl} = this.state;
 
     const styles = {
@@ -299,7 +257,6 @@ const IconMenu = React.createClass({
         display: 'inline-block',
         position: 'relative',
       },
-
       menu: {
         position: 'relative',
       },
@@ -308,20 +265,24 @@ const IconMenu = React.createClass({
     const mergedRootStyles = Object.assign(styles.root, style);
     const mergedMenuStyles = Object.assign(styles.menu, menuStyle);
 
+    warning(iconButtonElement.type.muiName === 'IconButton',
+      'We are expecting an <IconButton /> to be passed to the `iconButtonElement` property.');
+
     const iconButton = React.cloneElement(iconButtonElement, {
       onKeyboardFocus: onKeyboardFocus,
       iconStyle: Object.assign({}, iconStyle, iconButtonElement.props.iconStyle),
       onTouchTap: (event) => {
         this.open(Events.isKeyboard(event) ? 'keyboard' : 'iconTap', event);
-        if (iconButtonElement.props.onTouchTap) iconButtonElement.props.onTouchTap(event);
+        if (iconButtonElement.props.onTouchTap) {
+          iconButtonElement.props.onTouchTap(event);
+        }
       },
-      ref: this.state.iconButtonRef,
+      ref: 'iconButton',
     });
 
     const menu = (
       <Menu
         {...other}
-        animateOpen={true}
         initiallyKeyboardFocused={this.state.menuInitiallyKeyboardFocused}
         onEscKeyDown={this.handleEscKeyDownMenu}
         onItemTouchTap={this.handleItemTouchTap}
@@ -351,14 +312,15 @@ const IconMenu = React.createClass({
           childContextTypes={this.constructor.childContextTypes}
           useLayerForClickAway={useLayerForClickAway}
           onRequestClose={this.handleRequestClose}
+          animated={animated}
+          animation={animation}
           context={this.context}
         >
           {menu}
         </Popover>
       </div>
     );
-  },
-
-});
+  }
+}
 
 export default IconMenu;
